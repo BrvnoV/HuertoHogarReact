@@ -69,6 +69,24 @@ interface ShopContextType {
   setCurrentProductId: React.Dispatch<React.SetStateAction<string | null>>;
   showReviewModal: boolean;
   setShowReviewModal: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // Estado para Modals (Carrito y Compra)
+  showCart: boolean;
+  setShowCart: React.Dispatch<React.SetStateAction<boolean>>;
+  showCheckout: boolean;
+  setShowCheckout: React.Dispatch<React.SetStateAction<boolean>>;
+  showThankYou: boolean;
+  setShowThankYou: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // Estado para Modals (Autenticación)
+  showAuth: boolean;
+  setShowAuth: React.Dispatch<React.SetStateAction<boolean>>;
+
+  // Estado para Puntos (en tránsito durante la compra)
+  pointsToRedeem: number;
+  setPointsToRedeem: React.Dispatch<React.SetStateAction<number>>;
+  pointsEarned: number;
+  setPointsEarned: React.Dispatch<React.SetStateAction<number>>;
 
   // Estado de Notificaciones
   toast: ToastState;
@@ -91,9 +109,17 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   const [reviews, setReviews] = useLocalStorage<ReviewsState>('reviews', {});
   const [toast, setToast] = useState<ToastState>({ message: '', variant: 'info', show: false });
 
-  // Estados para controlar el modal de reseñas
+  // Estados para controlar los Modals
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
+  const [showCart, setShowCart] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+
+  // Estados para el flujo de puntos en el checkout
+  const [pointsToRedeem, setPointsToRedeem] = useState(0); 
+  const [pointsEarned, setPointsEarned] = useState(0);
 
   // --- Funciones de Notificaciones (Toast) ---
   const showToast = (message: string, variant: 'success' | 'error' | 'info' = 'info') => {
@@ -271,13 +297,31 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     reviews,
     handleSubmitReview,
     handleConfirmPurchase,
-    toast,
-    showToast,
-    hideToast,
+    
+    // Modals y sus controladores
     currentProductId,
     setCurrentProductId,
     showReviewModal,
     setShowReviewModal,
+    showCart,
+    setShowCart,
+    showCheckout,
+    setShowCheckout,
+    showThankYou,
+    setShowThankYou,
+    showAuth,
+    setShowAuth,
+    
+    // Puntos en tránsito
+    pointsToRedeem,
+    setPointsToRedeem,
+    pointsEarned,
+    setPointsEarned,
+    
+    // Toast
+    toast,
+    showToast,
+    hideToast,
   };
 
   return (
@@ -295,4 +339,4 @@ export const useShop = () => {
     throw new Error('useShop debe ser usado dentro de un ShopProvider');
   }
   return context;
-}
+};
