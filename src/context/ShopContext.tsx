@@ -64,6 +64,12 @@ interface ShopContextType {
   handleSubmitReview: (productId: string, rating: string, comment: string) => void;
   handleConfirmPurchase: (checkoutData: CheckoutData, pointsToRedeem: number) => number; // Devuelve puntos ganados
 
+  // Estado para Modals (Reseña)
+  currentProductId: string | null;
+  setCurrentProductId: React.Dispatch<React.SetStateAction<string | null>>;
+  showReviewModal: boolean;
+  setShowReviewModal: React.Dispatch<React.SetStateAction<boolean>>;
+
   // Estado de Notificaciones
   toast: ToastState;
   showToast: (message: string, variant: 'success' | 'error' | 'info') => void;
@@ -84,6 +90,10 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   const [userPoints, setUserPoints] = useLocalStorage<number>('userPoints', 0);
   const [reviews, setReviews] = useLocalStorage<ReviewsState>('reviews', {});
   const [toast, setToast] = useState<ToastState>({ message: '', variant: 'info', show: false });
+
+  // Estados para controlar el modal de reseñas
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [currentProductId, setCurrentProductId] = useState<string | null>(null);
 
   // --- Funciones de Notificaciones (Toast) ---
   const showToast = (message: string, variant: 'success' | 'error' | 'info' = 'info') => {
@@ -222,6 +232,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
       };
     });
     
+    setShowReviewModal(false); // Cierra el modal al enviar
     showToast('Reseña enviada con éxito', 'success');
   };
 
@@ -263,6 +274,10 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     toast,
     showToast,
     hideToast,
+    currentProductId,
+    setCurrentProductId,
+    showReviewModal,
+    setShowReviewModal,
   };
 
   return (
@@ -280,4 +295,4 @@ export const useShop = () => {
     throw new Error('useShop debe ser usado dentro de un ShopProvider');
   }
   return context;
-};
+}
