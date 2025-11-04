@@ -1,54 +1,52 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { useShop } from '../context/ShopContext'; // <-- 1. IMPORTAR useShop
 
-// --- Componentes del Layout ---
+// --- Componentes del Layout Estructural ---
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
-// --- Modals y UI Globales ---
-// Importamos todos los modals que vivirán "encima" de la aplicación.
-// Comentaremos los que aún no hemos creado para que no te dé error.
-
-import ReviewModal from '../components/product/ReviewModal';
-import CartOffcanvas from '../components/cart/CartOffcanvas';
+// --- Componentes de UI Global (Modals, Offcanvas, etc.) ---
+import ScrollToTop from '../components/ui/ScrollToTop';
 import AuthModal from '../components/auth/AuthModal';
+import CartOffcanvas from '../components/cart/CartOffcanvas';
 import CheckoutModal from '../components/cart/CheckoutModal';
+import ReviewModal from '../components/product/ReviewModal';
 import ThankYouModal from '../components/ui/ThankYouModal';
-import GlobalToast from '../components/ui/GlobalToast'; // Para las notificaciones
+// import GlobalToast from '../components/ui/GlobalToast';
 
 export default function MainLayout() {
+  // 2. OBTENER LAS FUNCIONES DEL CONTEXTO
+  const { setShowCart, setShowAuth } = useShop();
+
   return (
     <>
-      {/* La barra de navegación es persistente en todas las páginas */}
-      <Navbar />
+      <ScrollToTop />
+      
+      {/* 3. PASAR LAS FUNCIONES COMO PROPS */}
+      <Navbar 
+        onCartClick={() => setShowCart(true)}
+        onLoginClick={() => setShowAuth(true)}
+      />
 
       <main>
-        {/* <Outlet /> es el marcador de posición donde React Router 
-          renderizará el componente de la página actual.
-        */}
+        {/* Aquí se renderiza el contenido de la página actual (ej. Home.tsx) */}
         <Outlet />
       </main>
 
-      {/* El pie de página es persistente en todas las páginas */}
+      {/* Pie de página (visible en todas las páginas) */}
       <Footer />
 
-      {/* --- Global Modals & Notifications --- */}
-      {/* Renderizamos todos los modals aquí.
-        No importa que estén "fuera" del main, ya que usan
-        posicionamiento "fixed" o "absolute".
-        
-        Ellos mismos saben cuándo mostrarse u ocultarse 
-        leyendo el estado directamente desde nuestro useShop() context.
-      */}
-      
+      {/* --- Modals y UI Globales --- */}
+      {/* Estos ya leen el estado desde el contexto, así que están bien */}
+      <AuthModal />
+      <CartOffcanvas />
+      <CheckoutModal />
       <ReviewModal />
+      <ThankYouModal />
       
-      {/* (Descomenta estos componentes a medida que los vayas creando) */}
-      {<CartOffcanvas />}
-      {<AuthModal />}
-      {<CheckoutModal />}
-      {<ThankYouModal />}
-      {<GlobalToast />}
+      {/* (Descomenta cuando creemos el componente de Toast) */}
+      {/* <GlobalToast /> */}
     </>
   );
 }
