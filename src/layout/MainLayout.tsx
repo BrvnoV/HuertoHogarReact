@@ -1,96 +1,54 @@
-// src/layout/MainLayout.tsx
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
 
-// 1. Importar los componentes del esqueleto
+// --- Componentes del Layout ---
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import ScrollToTop from '../components/ui/ScrollToTop'; // Componente útil para la navegación
 
-// 2. Importar todos los Modals y Offcanvas "globales"
-import AuthModal from '../components/auth/AuthModal';
+// --- Modals y UI Globales ---
+// Importamos todos los modals que vivirán "encima" de la aplicación.
+// Comentaremos los que aún no hemos creado para que no te dé error.
+
+import ReviewModal from '../components/product/ReviewModal';
 import CartOffcanvas from '../components/cart/CartOffcanvas';
+import AuthModal from '../components/auth/AuthModal';
 import CheckoutModal from '../components/cart/CheckoutModal';
 import ThankYouModal from '../components/ui/ThankYouModal';
-// Nota: El ReviewModal lo manejaremos desde la página de Productos,
-// ya que no se dispara desde el layout.
+import GlobalToast from '../components/ui/GlobalToast'; // Para las notificaciones
 
 export default function MainLayout() {
-  
-  // 3. Definir los estados para controlar la visibilidad de los overlays
-  const [showAuth, setShowAuth] = useState(false);
-  const [showCart, setShowCart] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [showThankYou, setShowThankYou] = useState(false);
-
-  // Estado para pasar los puntos ganados al modal de "Gracias"
-  const [pointsEarned, setPointsEarned] = useState(0);
-
-  // 4. Definir las funciones de "flujo" entre modals
-  
-  // Cierra el carrito y abre el checkout
-  const handleProceedToCheckout = () => {
-    setShowCart(false);
-    setShowCheckout(true);
-  };
-
-  // Cierra el checkout, guarda los puntos y abre el modal de "Gracias"
-  const handlePurchaseSuccess = (points: number) => {
-    setPointsEarned(points);
-    setShowCheckout(false);
-    setShowThankYou(true);
-  };
-
   return (
     <>
-      {/* Componente que hace scroll al top al cambiar de página */}
-      <ScrollToTop />
+      {/* La barra de navegación es persistente en todas las páginas */}
+      <Navbar />
 
-      {/* 5. Renderizar el Navbar y pasarle las funciones que necesita */}
-      <Navbar 
-        onLoginClick={() => setShowAuth(true)} 
-        onCartClick={() => setShowCart(true)} 
-      />
-
-      {/* 6. Renderizar el contenido de la página actual */}
       <main>
+        {/* <Outlet /> es el marcador de posición donde React Router 
+          renderizará el componente de la página actual.
+        */}
         <Outlet />
       </main>
 
-      {/* 7. Renderizar el Footer */}
+      {/* El pie de página es persistente en todas las páginas */}
       <Footer />
 
-      {/* 8. Renderizar todos los Modals y Offcanvas globales.
-           Estarán ocultos por defecto hasta que su estado 'show' sea true.
+      {/* --- Global Modals & Notifications --- */}
+      {/* Renderizamos todos los modals aquí.
+        No importa que estén "fuera" del main, ya que usan
+        posicionamiento "fixed" o "absolute".
+        
+        Ellos mismos saben cuándo mostrarse u ocultarse 
+        leyendo el estado directamente desde nuestro useShop() context.
       */}
-
-      {/* Modal de Autenticación (Login/Registro) */}
-      <AuthModal 
-        show={showAuth} 
-        onHide={() => setShowAuth(false)} 
-      />
-
-      {/* Offcanvas del Carrito de Compras */}
-      <CartOffcanvas 
-        show={showCart} 
-        onHide={() => setShowCart(false)}
-        onProceedToCheckout={handleProceedToCheckout} // Función para abrir el checkout
-      />
-
-      {/* Modal de Finalizar Compra */}
-      <CheckoutModal
-        show={showCheckout}
-        onHide={() => setShowCheckout(false)}
-        onPurchaseSuccess={handlePurchaseSuccess} // Función para abrir "Gracias"
-      />
-
-      {/* Modal de "Gracias por su compra" */}
-      <ThankYouModal
-        show={showThankYou}
-        onHide={() => setShowThankYou(false)}
-        pointsEarned={pointsEarned}
-      />
+      
+      <ReviewModal />
+      
+      {/* (Descomenta estos componentes a medida que los vayas creando) */}
+      {<CartOffcanvas />}
+      {<AuthModal />}
+      {<CheckoutModal />}
+      {<ThankYouModal />}
+      {<GlobalToast />}
     </>
   );
 }
