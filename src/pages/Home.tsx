@@ -1,7 +1,6 @@
 import React from 'react';
 
-// 1. Importa todos los componentes "sección" que forman parte del Home.
-// (Es normal que te den error de "Cannot find module" si aún no los has creado)
+// Importamos los componentes reutilizables que forman la página de inicio
 import HeroBanner from '../components/ui/HeroBanner';
 import Categories from '../components/Categories';
 import ProductList from '../components/product/ProductList';
@@ -9,30 +8,32 @@ import Impact from '../components/Impact';
 import About from '../components/About';
 import Blog from '../components/Blog';
 
-// 2. Este es el componente de la página de inicio (ruta "/")
 export default function Home() {
   return (
     <>
-      {/* 3. Renderiza cada componente en el orden en que
-             aparecían en tu HTML original. */}
-      
-      {/* Carrusel de Banners */}
+      {/* 1. Carrusel de bienvenida */}
       <HeroBanner />
-
-      {/* Sección de Categorías */}
+      
+      {/* 2. Tarjetas de Categorías */}
       <Categories />
 
-      {/* Sección de Productos Destacados (con filtros) */}
-      <ProductList />
+      {/* 3. Lista de productos destacados (le pasamos un título y un límite) */}
+      <ProductList 
+        title="Productos Destacados" 
+        limit={6} // Mostramos solo 6 productos en la página de inicio
+      />
 
-      {/* Sección de Impacto Ambiental */}
+      {/* 4. Sección de Impacto Ambiental */}
       <Impact />
 
-      {/* Sección "Nosotros" (con el mapa) */}
+      {/* 5. Sección "Nosotros" con el mapa */}
       <About />
 
-      {/* Sección del Blog */}
-      <Blog />
+      {/* 6. Sección de Blog (con un límite de 2 posts) */}
+      <Blog 
+        title="Blog: Alimentación Saludable"
+        limit={2} 
+      />
     </>
   );
 }
