@@ -2,11 +2,11 @@ import React from 'react';
 
 // Importamos los componentes reutilizables que forman la página de inicio
 import HeroBanner from '../components/ui/HeroBanner';
-import Categories from '../components/Categories';
+import Categories from '../components/ui/Categories';
 import ProductList from '../components/product/ProductList';
-import Impact from '../components/Impact';
-import About from '../components/About';
-import Blog from '../components/Blog';
+import Impact from '../components/ui/Impact';
+import About from '../components/ui/About';
+import Blog from '../components/ui/Blog';
 
 export default function Home() {
   return (
