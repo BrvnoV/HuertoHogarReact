@@ -3,10 +3,10 @@ import { Form, Button, Alert } from 'react-bootstrap';
 import { useShop } from '../../context/ShopContext';
 import { 
   soloLetrasEspacios, 
-  isDuocMail, 
+  isValidEmail, 
   validPhone, 
   strongPassword, 
-  comunas 
+  comunas,
 } from '../../data/constants';
 
 interface RegisterFormProps {
@@ -66,8 +66,8 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         }
         break;
       case 'email':
-        if (!isDuocMail(value)) {
-          errorMsg = 'El correo debe ser un email válido de @duoc.cl.';
+        if (!isValidEmail(value)) {
+          errorMsg = 'Email invalido (@duoc.cl / @gmail.com /@profesorduoc.com.)';
         }
         break;
       case 'phone':

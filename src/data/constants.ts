@@ -7,8 +7,13 @@
 // Comprueba si el string contiene solo letras y espacios (incluyendo acentos y ñ)
 export const soloLetrasEspacios = (str: string): boolean => /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/.test(str);
 
-// Comprueba si el email pertenece al dominio @duoc.cl
-export const isDuocMail = (str: string): boolean => /^[A-Za-z0-9-_.]+@duoc.cl$/.test(str);
+// Comprueba si el email pertenece a CUALQUIERA de los dominios permitidos
+export const isValidEmail = (str: string): boolean => {
+  // El (dominio1|dominio2|dominio3) significa "dominio1 O dominio2 O dominio3"
+  const emailRegex = /^[A-Za-z0-9-_.]+@(duoc\.cl|gmail\.com|profesorduoc\.com)$/;
+  return emailRegex.test(str);
+};
+
 
 // Comprueba si el teléfono es válido (o está vacío, ya que es opcional)
 export const validPhone = (str: string): boolean => str === '' || /^[0-9+()-]{8,15}$/.test(str);

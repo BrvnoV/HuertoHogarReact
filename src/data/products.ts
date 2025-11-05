@@ -23,7 +23,7 @@ export const initialProducts: Product[] = [
         price: 1200,
         category: 'Frutas',
         stock: 150,
-        image: 'assets/img/apple.jpeg',
+        image: 'public/assets/img/apple.jpg',
         description: 'Manzanas crujientes del Valle del Maule.',
         origin: 'Valle del Maule, Chile',
         sustainability: 'Cultivadas con prácticas de agricultura sostenible.',
