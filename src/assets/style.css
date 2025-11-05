@@ -1,6 +1,6 @@
 body {
     font-family: 'Montserrat', sans-serif;
-    background-image: url('assets/img/back_wood.jpg'); /* Replace with your wooden texture image URL */
+    background-image: url('/assets/img/back_wood.jpg'); /* Replace with your wooden texture image URL */
     background-size: cover; /* Scale image to cover the entire body */
     background-position: center; /* Center the image */
     background-repeat: no-repeat; /* Prevent tiling */

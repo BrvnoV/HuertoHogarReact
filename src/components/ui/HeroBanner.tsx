@@ -11,7 +11,7 @@ export default function HeroBanner() {
         */}
         <img
           className="d-block w-100"
-          src="/assets/img/fruit.png"
+          src="/assets/img/fruit.jpg"
           alt="Oferta Frutas"
           style={{ height: '800px', objectFit: 'cover' }} // Estilo en línea para el alto
         />

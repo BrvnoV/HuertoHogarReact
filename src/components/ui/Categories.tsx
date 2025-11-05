@@ -13,13 +13,13 @@ const categoriesData = [
   {
     title: 'Verduras Orgánicas',
     text: 'Verduras sin pesticidas, frescas y nutritivas.',
-    image: '/assets/img/vegetales1.png',
+    image: '/assets/img/vegetales1.jpeg',
     link: '/productos?category=Verduras' // Enlazamos a productos (lógica futura)
   },
   {
     title: 'Ofertas Especiales',
     text: 'Descuentos en productos seleccionados.',
-    image: '/assets/img/ofertas1.png',
+    image: '/assets/img/ofertas1.jpg',
     link: '/productos' // Enlazamos a todos los productos
   }
 ];

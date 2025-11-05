@@ -13,7 +13,7 @@ import CartOffcanvas from '../components/cart/CartOffcanvas';
 import CheckoutModal from '../components/cart/CheckoutModal';
 import ReviewModal from '../components/product/ReviewModal';
 import ThankYouModal from '../components/ui/ThankYouModal';
-// import GlobalToast from '../components/ui/GlobalToast';
+import GlobalToast from '../components/ui/GlobalToast';
 
 export default function MainLayout() {
   // 2. OBTENER LAS FUNCIONES DEL CONTEXTO
