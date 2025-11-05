@@ -7,7 +7,7 @@ const categoriesData = [
   {
     title: 'Frutas Frescas',
     text: 'Frutas de temporada cultivadas en el punto óptimo de madurez.',
-    image: '/assets/img/fruta1.png',
+    image: '/assets/img/fruta1.jpg',
     link: '/productos?category=Frutas' // Enlazamos a productos (lógica futura)
   },
   {

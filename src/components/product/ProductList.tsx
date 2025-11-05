@@ -88,7 +88,7 @@ export default function ProductList({ title, limit }: ProductListProps) {
       )}
 
       {/* --- Grid de Productos --- */}
-      <div className="row" id="productGrid">
+      <div className="row mb-3 justify-content-center align-items-center" id="productGrid">
         {displayedProducts.length > 0 ? (
           displayedProducts.map(product => (
             <ProductCard 
