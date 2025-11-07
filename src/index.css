@@ -1,0 +1,24 @@
+/* src/index.css */
+
+/* 1. Importa las fuentes de Google Fonts
+  Esta es la misma línea que tenías en el <link> de tu index.html,
+  pero en formato de importación CSS.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&display=swap');
+
+/* 2. (Opcional) Reseteos globales
+  Es una buena práctica aplicar 'border-box' a todos los elementos
+  para que el padding y los bordes no afecten el ancho/alto total.
+*/
+html {
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* Tu archivo 'style.css' ya define las fuentes, el fondo, etc.,
+  por lo que no es necesario repetir esos estilos aquí. 
+  Este archivo es solo para las importaciones globales.
+*/
