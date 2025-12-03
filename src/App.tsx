@@ -36,7 +36,7 @@ export default function App() {
       <Route path="/forbidden" element={
         <MainLayout>
           <h1>403 - Acceso Denegado</h1>
-          <p>No tienes permisos para esta página. <a href="/productos">Volver a productos</a></p>
+          <p>No tienes permisos para esta página. <a href="/productos">Volver a productos</a></p> 
         </MainLayout>
       } />
 
