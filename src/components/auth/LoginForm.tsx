@@ -1,78 +1,114 @@
 import React, { useState } from 'react';
-import { Form, Button, Alert } from 'react-bootstrap';
-import { useShop } from '../../context/ShopContext';
+import { Form, Button } from 'react-bootstrap';
+import api from '../../utils/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+import { useShop } from '../../context/ShopContext';  // Para toasts
 
 interface LoginFormProps {
-  onSwitchToRegister: () => void;
-  onLoginSuccess: () => void;
+  onSwitchToRegister: () => void;  // Para switch a registro (ajusta si no lo usas)
 }
 
-export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginFormProps) {
-  // Obtenemos la función de login del contexto
-  const { handleLogin, showToast } = useShop();
+export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
+  const navigate = useNavigate();
+  const { showToast } = useShop();  // Solo toast por ahora; agrega setUser si actualizas contexto
 
-  // Estado local para los campos del formulario
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!email || !password) {
-      setError('Por favor, completa todos los campos');
-      return;
-    }
-
-    // Llamamos a la función de login del contexto
-    const success = handleLogin(email, password);
-
-    if (success) {
-      onLoginSuccess(); // Cierra el modal
-    } else {
-      // El contexto ya muestra un toast, pero podemos poner un error local
-      setError('Email o contraseña incorrectos');
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+    setError('');  // Limpia error al tipear
   };
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!formData.email || !formData.password) {
+    setError('Email y contraseña son requeridos');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+  try {
+    // TEMPORAL: Comenta el api.post cuando el BE esté listo
+    // const res = await api.post('/api/login', {
+    //   email: formData.email,
+    //   contraseña: formData.password
+    // });
+
+    // Usuario dummy con rol basado en email (USUARIO por default, ADMIN si email incluye 'admin')
+    const rol = formData.email.toLowerCase().includes('admin') ? 'ADMIN' : 'USUARIO';
+    const nombre = rol === 'ADMIN' ? 'Admin User' : 'Juan Pérez';
+
+    // Token fake con claim 'rol' (generado en jwt.io – copia este para test)
+    const token = rol === 'ADMIN' 
+      ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbl9lZ2CiIsIm5vbWJyZSI6IkFkbWluIFVzZXIiLCJyb2wiOiJBRE1JTiIsImlhdCI6MTUxNjIzOTAyMn0.dQw4w9WgXcQ'  // Token con rol 'ADMIN'
+      : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3VhcmlvX2VtYWlsIiwibm9tYnJlIjoiSnVhbiBQZXJleiIsInJvbCI6IlVTVUFSSU8iLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';  // Token con rol 'USUARIO'
+
+    const res = {
+      data: {
+        token,
+        nombre,
+        rol
+      }
+    };
+
+    // Guarda en localStorage
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('usuario', res.data.nombre);
+
+    showToast(`¡Bienvenido, ${res.data.nombre}!`, 'success');
+    navigate('/');  // Redirige a home
+  } catch (err: any) {
+    const msg = err.response?.data?.message || 'Credenciales inválidas';
+    setError(msg);
+    showToast('Error en login: ' + msg, 'error');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Form onSubmit={handleSubmit}>
-      {error && <Alert variant="danger">{error}</Alert>}
-      
-      <Form.Group className="mb-3" controlId="loginEmail">
+      <Form.Group className="mb-3" controlId="email">
         <Form.Label>Email</Form.Label>
         <Form.Control
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="alumno@duoc.cl"
+          value={formData.email}
+          onChange={handleChange}
+          isInvalid={!!error}
+          placeholder="ejemplo@duocuc.cl"
           required
         />
       </Form.Group>
 
-      <Form.Group className="mb-3" controlId="loginPassword">
+      <Form.Group className="mb-3" controlId="password">
         <Form.Label>Contraseña</Form.Label>
         <Form.Control
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Duoc1234*"
+          value={formData.password}
+          onChange={handleChange}
+          isInvalid={!!error}
           required
         />
+        {error && <Form.Control.Feedback type="invalid">{error}</Form.Control.Feedback>}
       </Form.Group>
 
-      <Button variant="primary" type="submit" className="w-100">
-        Iniciar Sesión
+      <Button variant="primary" type="submit" className="w-100 mb-3" disabled={loading}>
+        {loading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
       </Button>
 
-      <p className="mt-3 text-center">
-        <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToRegister(); }}>
+      <p className="text-center">
+        <a href="#" onClick={(e) => { 
+          e.preventDefault(); 
+          onSwitchToRegister(); 
+        }}>
           ¿No tienes cuenta? Regístrate
         </a>
-      </p>
-      <p className="text-center">
-        <a href="#">¿Olvidaste tu contraseña?</a>
       </p>
     </Form>
   );

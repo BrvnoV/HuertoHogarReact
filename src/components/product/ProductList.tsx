@@ -1,46 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../../utils/axiosInstance';
 import { useShop } from '../../context/ShopContext';
-import ProductCard from './ProductCard'; // Importamos la tarjeta individual
+import { Product } from '../../data/products';  // Solo Product por ahora
+import ProductCard from './ProductCard';
+
+// Inline temporal para Category
+interface Category {
+  id: number;
+  name: string;
+}
 
 interface ProductListProps {
-  title: string;       // Título de la sección (ej. "Productos Destacados")
-  limit?: number;      // Límite opcional de productos a mostrar
+  title: string;
+  limit?: number;
 }
 
 export default function ProductList({ title, limit }: ProductListProps) {
-  // 1. Obtenemos los productos del contexto global
-  const { products } = useShop();
+  const { setProducts } = useShop();
 
-  // 2. Estados locales para manejar los filtros
-  const [category, setCategory] = useState(''); // '' = Todas
-  const [sort, setSort] = useState('price-asc'); // Valor por defecto
+  const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [category, setCategory] = useState('');
+  const [sort, setSort] = useState('price-asc');
 
-  // 3. Lógica de filtrado y ordenamiento
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [prodRes, catRes] = await Promise.all([
+          api.get('/api/productos'),
+          api.get('/api/categorias')
+        ]);
+        const fetchedProductos: Product[] = prodRes.data;
+        setProductos(fetchedProductos);
+        if (setProducts) setProducts(fetchedProductos);
+        setCategorias(catRes.data as Category[]);
+      } catch (err) {
+        console.error('Error fetch:', err);
+        setError('Error cargando productos. ¿Backend corriendo?');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const getFilteredAndSortedProducts = () => {
-    let filteredProducts = [...products];
+    let filteredProducts = [...productos];
 
-    // Primero filtramos por categoría
     if (category) {
-      filteredProducts = filteredProducts.filter(p => p.category === category);
+      filteredProducts = filteredProducts.filter(p => p.category === category);  // Ajusta field
     }
 
-    // Luego ordenamos
     switch (sort) {
       case 'price-asc':
         filteredProducts.sort((a, b) => a.price - b.price);
         break;
       case 'price-desc':
-        filteredProducts.sort((a, b) => b.price - b.price);
+        filteredProducts.sort((a, b) => b.price - a.price);
         break;
       case 'popularity':
-        // Mantenemos tu lógica de popularidad aleatoria
         filteredProducts.sort(() => Math.random() - 0.5);
         break;
       default:
         filteredProducts.sort((a, b) => a.price - b.price);
     }
     
-    // Finalmente, aplicamos el límite si existe
     if (limit) {
       return filteredProducts.slice(0, limit);
     }
@@ -50,12 +78,28 @@ export default function ProductList({ title, limit }: ProductListProps) {
 
   const displayedProducts = getFilteredAndSortedProducts();
 
+  if (loading) {
+    return (
+      <section className="container my-5">
+        <h2 className="text-center mb-4" style={{ color: 'white' }}>{title}</h2>
+        <p className="text-center" style={{ color: 'white' }}>Cargando productos...</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="container my-5">
+        <h2 className="text-center mb-4" style={{ color: 'white' }}>{title}</h2>
+        <p className="text-center text-red-500">{error}</p>
+      </section>
+    );
+  }
+
   return (
     <section id="products" className="container my-5">
       <h2 className="text-center mb-4" style={{ color: 'white' }}>{title}</h2>
       
-      {/* --- Controles de Filtro --- */}
-      {/* Solo mostramos los filtros si no hay límite (es decir, en la pág. de Productos) */}
       {!limit && (
         <div className="row mb-3">
           <div className="col-md-6">
@@ -66,10 +110,9 @@ export default function ProductList({ title, limit }: ProductListProps) {
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="">Todas las Categorías</option>
-              <option value="Frutas">Frutas Frescas</option>
-              <option value="Verduras">Verduras Orgánicas</option>
-              <option value="Orgánicos">Productos Orgánicos</option>
-              <option value="Lácteos">Productos Lácteos</option>
+              {categorias.map(cat => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
             </select>
           </div>
           <div className="col-md-6">
@@ -87,7 +130,6 @@ export default function ProductList({ title, limit }: ProductListProps) {
         </div>
       )}
 
-      {/* --- Grid de Productos --- */}
       <div className="row mb-3 justify-content-center align-items-center" id="productGrid">
         {displayedProducts.length > 0 ? (
           displayedProducts.map(product => (

@@ -15,7 +15,12 @@ import ReviewModal from '../components/product/ReviewModal';
 import ThankYouModal from '../components/ui/ThankYouModal';
 import GlobalToast from '../components/ui/GlobalToast';
 
-export default function MainLayout() {
+// Interface para props (agregada para aceptar children)
+interface MainLayoutProps {
+  children?: React.ReactNode;  // ← Esto resuelve el error de IntrinsicAttributes
+}
+
+export default function MainLayout({ children }: MainLayoutProps) {
   // 2. OBTENER LAS FUNCIONES DEL CONTEXTO
   const { setShowCart, setShowAuth } = useShop();
 
@@ -30,8 +35,8 @@ export default function MainLayout() {
       />
 
       <main>
-        {/* Aquí se renderiza el contenido de la página actual (ej. Home.tsx) */}
-        <Outlet />
+        {/* Renderiza children si se pasa (ej. en /forbidden), sino Outlet para rutas anidadas */}
+        {children || <Outlet />}
       </main>
 
       {/* Pie de página (visible en todas las páginas) */}

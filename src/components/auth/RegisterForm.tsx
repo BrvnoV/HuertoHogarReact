@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
+import api from '../../utils/axiosInstance';
 import { useShop } from '../../context/ShopContext';
 import { 
   soloLetrasEspacios, 
-  isValidEmail, 
+  // isValidEmail,  // Reemplazamos con regex custom
   validPhone, 
   strongPassword, 
   comunas,
@@ -14,20 +15,25 @@ interface RegisterFormProps {
   onRegisterSuccess: () => void;
 }
 
-// Estado inicial para los datos del formulario
+// Estado inicial (agregamos apellido y fechaNacimiento)
 const initialFormData = {
-  name: '',
+  nombre: '',
+  apellido: '',
+  fechaNacimiento: '',
   email: '',
-  phone: '',
-  comuna: '',
+  phone: '',  // Opcional
+  comuna: '',  // Opcional
   password: '',
   confirmPassword: '',
   terms: false,
 };
 
-// Estado inicial para los errores de validación
+// Estado inicial para errores (agregamos nuevos campos)
 const initialErrors = {
-  name: '',
+  general: '',
+  nombre: '',
+  apellido: '',
+  fechaNacimiento: '',
   email: '',
   phone: '',
   comuna: '',
@@ -37,12 +43,12 @@ const initialErrors = {
 };
 
 export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: RegisterFormProps) {
-  const { handleRegister, showToast } = useShop();
+  const { showToast } = useShop();  // Mantenemos toast
 
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState(initialErrors);
 
-// Función genérica para manejar cambios en los inputs
+  // Función genérica para manejar cambios (mantenida)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
     const isCheckbox = type === 'checkbox';
@@ -56,18 +62,42 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     validateField(id, value);
   };
 
-  // Función para validar un campo específico
+  // Validación custom para email (ajustada a requisitos exactos)
+  const validarEmail = (email: string): boolean => {
+    return /@(?:duocuc\.cl|gmail\.com|profesor\.duoc\.cl)$/.test(email);
+  };
+
+  // Nueva: Validación de edad (>18)
+  const validarEdad = (fecha: string): boolean => {
+    if (!fecha) return false;
+    const nacimiento = new Date(fecha);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--;
+    }
+    return edad >= 18;
+  };
+
+  // Función para validar un campo específico (agregamos nuevos casos)
   const validateField = (id: string, value: any) => {
     let errorMsg = '';
     switch (id) {
-      case 'name':
+      case 'nombre':
+      case 'apellido':  // Aplica misma regla
         if (!soloLetrasEspacios(value) || value.length > 50) {
-          errorMsg = 'El nombre solo puede contener letras y espacios, máx 50 caracteres.';
+          errorMsg = 'Solo letras y espacios, máx 50 caracteres.';
+        }
+        break;
+      case 'fechaNacimiento':
+        if (!validarEdad(value)) {
+          errorMsg = 'Debes ser mayor de 18 años.';
         }
         break;
       case 'email':
-        if (!isValidEmail(value)) {
-          errorMsg = 'Email invalido (@duoc.cl / @gmail.com /@profesorduoc.com.)';
+        if (!validarEmail(value)) {  // Usa custom regex
+          errorMsg = 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.';
         }
         break;
       case 'phone':
@@ -81,10 +111,10 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         }
         break;
       case 'password':
-        if (!strongPassword(value)) {
-          errorMsg = 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.';
+        if (!strongPassword(value)) {  // Mantenemos tu función (ajusta mensaje si quieres menos estricto)
+          errorMsg = 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.';  // O quita "símbolo" si no lo pides
         }
-        // Validar también la confirmación si la contraseña cambia
+        // Validar confirmación si cambia
         if (formData.confirmPassword && value !== formData.confirmPassword) {
           setErrors(prev => ({ ...prev, confirmPassword: 'Las contraseñas no coinciden.' }));
         } else if (formData.confirmPassword) {
@@ -106,59 +136,112 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     return !errorMsg;
   };
 
-  // Validar todo el formulario al enviar
-  const validateForm = () => {
-    const newErrors = {
-      name: validateField('name', formData.name) ? '' : errors.name || 'Error en nombre.',
-      email: validateField('email', formData.email) ? '' : errors.email || 'Error en email.',
-      phone: validateField('phone', formData.phone) ? '' : errors.phone || '', // Opcional
-      comuna: validateField('comuna', formData.comuna) ? '' : errors.comuna || 'Selecciona comuna.',
-      password: validateField('password', formData.password) ? '' : errors.password || 'Error en contraseña.',
-      confirmPassword: validateField('confirmPassword', formData.confirmPassword) ? '' : errors.confirmPassword || 'Error en confirmación.',
-      terms: formData.terms ? '' : 'Debes aceptar los términos.'
-    };
-    setErrors(newErrors);
-    // Devuelve true si no hay ningún string de error
-    return !Object.values(newErrors).some(error => error);
+  // Validar todo el formulario (corregido: incluye todas las keys)
+const validateForm = () => {
+  // Inicializa con estructura completa (evita missing props)
+  const newErrors = {
+    general: '',  // Siempre vacío en validateForm (solo para campos)
+    nombre: '',
+    apellido: '',
+    fechaNacimiento: '',
+    email: '',
+    phone: '',
+    comuna: '',
+    password: '',
+    confirmPassword: '',
+    terms: ''
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Sobrescribe solo errores específicos
+  newErrors.nombre = formData.nombre ? (soloLetrasEspacios(formData.nombre) && formData.nombre.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Nombre requerido';
+  newErrors.apellido = formData.apellido ? (soloLetrasEspacios(formData.apellido) && formData.apellido.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Apellido requerido';
+  newErrors.fechaNacimiento = formData.fechaNacimiento ? (validarEdad(formData.fechaNacimiento) ? '' : 'Debes ser mayor de 18 años.') : 'Fecha requerida';
+  newErrors.email = formData.email ? (validarEmail(formData.email) ? '' : 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.') : 'Email requerido';
+  newErrors.phone = formData.phone ? (validPhone(formData.phone) ? '' : 'Teléfono no válido (8-15 dígitos).') : '';
+  newErrors.comuna = formData.comuna ? '' : '';  // Opcional, siempre OK
+  newErrors.password = formData.password ? (strongPassword(formData.password) ? '' : 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.') : 'Contraseña requerida';
+  newErrors.confirmPassword = formData.confirmPassword === formData.password ? '' : 'Las contraseñas no coinciden.';
+  newErrors.terms = formData.terms ? '' : 'Debes aceptar los términos.';
+
+  setErrors(newErrors);
+  // Devuelve true si no hay errores (excepto general)
+  return !Object.values(newErrors).slice(1).some(error => error);  // Ignora general
+};
+
+  // Submit: Cambiado a axios.post (integra con BE)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateForm()) {
-      // Llamamos a la función de registro del contexto
-      const success = handleRegister(formData);
-      
-      if (success) {
-        onRegisterSuccess(); // Vuelve al login
-        setFormData(initialFormData); // Resetea el formulario
+      try {
+        // POST real a /api/usuarios (solo campos requeridos; extras opcionales)
+        await api.post('/api/usuarios', {
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          fechaNacimiento: formData.fechaNacimiento,
+          email: formData.email,
+          contraseña: formData.password,  // Renombrado para BE
+          // Opcionales: phone: formData.phone, comuna: formData.comuna
+        });
+        showToast('¡Registro exitoso! Ve al login.', 'success');  // Usa tu toast
+        onRegisterSuccess();  // Vuelve al login
+        setFormData(initialFormData);  // Resetea
         setErrors(initialErrors);
-      } else {
-        showToast('Ocurrió un error en el registro', 'error');
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'Error en el servidor', 'error');
+        setErrors({ ...errors, general: 'Error en registro' });  // Agrega error general si quieres
       }
     } else {
-      showToast('Por favor, corrige los errores en el formulario', 'error');
+      showToast('Corrige los errores en el formulario', 'error');
     }
   };
 
   return (
     <Form noValidate onSubmit={handleSubmit}>
-      
-      {/* Name */}
-      <Form.Group className="mb-3" controlId="name">
-        <Form.Label>Nombre Completo</Form.Label>
+      {/* Nombre */}
+      <Form.Group className="mb-3" controlId="nombre">
+        <Form.Label>Nombre</Form.Label>
         <Form.Control
           type="text"
-          value={formData.name}
+          value={formData.nombre}
           onChange={handleChange}
-          isInvalid={!!errors.name}
-          isValid={!errors.name && formData.name.length > 0}
+          isInvalid={!!errors.nombre}
+          isValid={!errors.nombre && formData.nombre.length > 0}
           required
         />
-        <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
+        <Form.Control.Feedback type="invalid">{errors.nombre}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Email */}
+      {/* Apellido (nuevo) */}
+      <Form.Group className="mb-3" controlId="apellido">
+        <Form.Label>Apellido</Form.Label>
+        <Form.Control
+          type="text"
+          value={formData.apellido}
+          onChange={handleChange}
+          isInvalid={!!errors.apellido}
+          isValid={!errors.apellido && formData.apellido.length > 0}
+          required
+        />
+        <Form.Control.Feedback type="invalid">{errors.apellido}</Form.Control.Feedback>
+      </Form.Group>
+
+      {/* Fecha Nacimiento (nuevo) */}
+      <Form.Group className="mb-3" controlId="fechaNacimiento">
+        <Form.Label>Fecha de Nacimiento</Form.Label>
+        <input  // Usa input nativo para date (Bootstrap lo soporta)
+          type="date"
+          id="fechaNacimiento"
+          value={formData.fechaNacimiento}
+          onChange={handleChange}
+          max={new Date().toISOString().split('T')[0]}  // No permite futuro
+          className={`form-control ${errors.fechaNacimiento ? 'is-invalid' : formData.fechaNacimiento ? 'is-valid' : ''}`}
+          required
+        />
+        <Form.Control.Feedback type="invalid">{errors.fechaNacimiento}</Form.Control.Feedback>
+      </Form.Group>
+
+      {/* Email (ajustado) */}
       <Form.Group className="mb-3" controlId="email">
         <Form.Label>Email</Form.Label>
         <Form.Control
@@ -172,7 +255,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Phone */}
+      {/* Phone (mantenido opcional) */}
       <Form.Group className="mb-3" controlId="phone">
         <Form.Label>Teléfono (opcional)</Form.Label>
         <Form.Control
@@ -185,18 +268,16 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         <Form.Control.Feedback type="invalid">{errors.phone}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Comuna */}
+      {/* Comuna (mantenido opcional) */}
       <Form.Group className="mb-3" controlId="comuna">
-        <Form.Label>Comuna</Form.Label>
+        <Form.Label>Comuna (opcional)</Form.Label>
         <Form.Select
           value={formData.comuna}
           onChange={handleChange}
           isInvalid={!!errors.comuna}
           isValid={!errors.comuna && formData.comuna.length > 0}
-          required
         >
           <option value="">Selecciona una comuna</option>
-          {/* Mapeamos el objeto de comunas importado */}
           {Object.entries(comunas).map(([codigo, nombre]) => (
             <option key={codigo} value={codigo}>{nombre}</option>
           ))}
@@ -232,7 +313,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         <Form.Control.Feedback type="invalid">{errors.confirmPassword}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Terms */}
+      {/* Terms (mantenido) */}
       <Form.Group className="mb-3" controlId="terms">
         <Form.Check
           type="checkbox"
