@@ -5,13 +5,13 @@ import { useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';  // Para toasts
 
 interface LoginFormProps {
-  onSwitchToRegister: () => void;  // Para switch a registro (ajusta si no lo usas)
-  onLoginSuccess?: () => void;  // ← Nueva prop opcional para éxito (ej. cierra modal)
+  onSwitchToRegister: () => void;  // Para switch a registro
+  onLoginSuccess?: () => void;  // Opcional para éxito (cierra modal)
 }
 
-export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
+export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginFormProps) {
   const navigate = useNavigate();
-  const { showToast } = useShop();  // Solo toast por ahora; agrega setUser si actualizas contexto
+  const { showToast, loginUser } = useShop();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -25,53 +25,46 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     setError('');  // Limpia error al tipear
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!formData.email || !formData.password) {
-    setError('Email y contraseña son requeridos');
-    return;
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      setError('Email y contraseña son requeridos');
+      return;
+    }
 
-  setLoading(true);
-  setError('');
-  try {
-    // TEMPORAL: Comenta el api.post cuando el BE esté listo
-    // const res = await api.post('/api/login', {
-    //   email: formData.email,
-    //   contraseña: formData.password
-    // });
+    setLoading(true);
+    setError('');
+    try {
+      // REAL: Llama al BE para login
+      const res = await api.post('/api/login', {
+        email: formData.email,
+        contraseña: formData.password
+      });
 
-    // Usuario dummy con rol basado en email (USUARIO por default, ADMIN si email incluye 'admin')
-    const rol = formData.email.toLowerCase().includes('admin') ? 'ADMIN' : 'USUARIO';
-    const nombre = rol === 'ADMIN' ? 'Admin User' : 'Juan Pérez';
+      // Guarda JWT y datos en localStorage
+      localStorage.setItem('token', res.data.token);
+      // localStorage.setItem('usuario', res.data.nombre); // Ya lo hace el context
 
-    // Token fake con claim 'rol' (generado en jwt.io – copia este para test)
-    const token = rol === 'ADMIN' 
-      ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbl9lZ2CiIsIm5vbWJyZSI6IkFkbWluIFVzZXIiLCJyb2wiOiJBRE1JTiIsImlhdCI6MTUxNjIzOTAyMn0.dQw4w9WgXcQ'  // Token con rol 'ADMIN'
-      : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3VhcmlvX2VtYWlsIiwibm9tYnJlIjoiSnVhbiBQZXJleiIsInJvbCI6IlVTVUFSSU8iLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';  // Token con rol 'USUARIO'
+      // Actualiza estado global
+      // Asumimos que el BE devuelve un objeto usuario o construimos uno
+      const userData = { name: res.data.nombre, email: formData.email };
+      loginUser(userData);
 
-    const res = {
-      data: {
-        token,
-        nombre,
-        rol
+      showToast(`¡Bienvenido, ${res.data.nombre}!`, 'success');
+      navigate('/');
+
+      if (onLoginSuccess) {
+        onLoginSuccess();
       }
-    };
-
-    // Guarda en localStorage
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('usuario', res.data.nombre);
-
-    showToast(`¡Bienvenido, ${res.data.nombre}!`, 'success');
-    navigate('/');  // Redirige a home
-  } catch (err: any) {
-    const msg = err.response?.data?.message || 'Credenciales inválidas';
-    setError(msg);
-    showToast('Error en login: ' + msg, 'error');
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const msg = err.response?.data?.message || 'Credenciales inválidas o error de servidor';
+      setError(msg);
+      showToast('Error en login: ' + msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -104,9 +97,9 @@ const handleSubmit = async (e: React.FormEvent) => {
       </Button>
 
       <p className="text-center">
-        <a href="#" onClick={(e) => { 
-          e.preventDefault(); 
-          onSwitchToRegister(); 
+        <a href="#" onClick={(e) => {
+          e.preventDefault();
+          onSwitchToRegister();
         }}>
           ¿No tienes cuenta? Regístrate
         </a>

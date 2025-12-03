@@ -56,6 +56,7 @@ interface ShopContextType {
   user: User | null;
   userPoints: number;
   handleLogin: (email: string, pass: string) => boolean;
+  loginUser: (userData: User) => void; // Nueva
   handleRegister: (formData: any) => boolean; // `any` para simplificar, puedes crear un tipo
   handleLogout: () => void;
 
@@ -69,7 +70,7 @@ interface ShopContextType {
   setCurrentProductId: React.Dispatch<React.SetStateAction<string | null>>;
   showReviewModal: boolean;
   setShowReviewModal: React.Dispatch<React.SetStateAction<boolean>>;
-  
+
   // Estado para Modals (Carrito y Compra)
   showCart: boolean;
   setShowCart: React.Dispatch<React.SetStateAction<boolean>>;
@@ -77,7 +78,7 @@ interface ShopContextType {
   setShowCheckout: React.Dispatch<React.SetStateAction<boolean>>;
   showThankYou: boolean;
   setShowThankYou: React.Dispatch<React.SetStateAction<boolean>>;
-  
+
   // Estado para Modals (Autenticación)
   showAuth: boolean;
   setShowAuth: React.Dispatch<React.SetStateAction<boolean>>;
@@ -100,7 +101,7 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 // --- 3. CREACIÓN DEL "PROVEEDOR" ---
 // Este componente envolverá toda tu aplicación
 export const ShopProvider = ({ children }: { children: ReactNode }) => {
-  
+
   // --- Estados Globales ---
   const [products, setProducts] = useLocalStorage<Product[]>('products', initialProducts);
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);
@@ -118,7 +119,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   const [showAuth, setShowAuth] = useState(false);
 
   // Estados para el flujo de puntos en el checkout
-  const [pointsToRedeem, setPointsToRedeem] = useState(0); 
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [pointsEarned, setPointsEarned] = useState(0);
 
   // --- Funciones de Notificaciones (Toast) ---
@@ -177,7 +178,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     if (!cartItem || !product) return;
 
     const quantityChange = newQuantity - cartItem.quantity;
-    
+
     // Verificamos si hay stock suficiente para AÑADIR más
     if (quantityChange > 0 && product.stock < quantityChange) {
       showToast(`Stock insuficiente. Solo quedan ${product.stock} unidades.`, 'error');
@@ -216,30 +217,27 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     showToast('Producto eliminado del carrito', 'info');
   };
 
-  // --- Funciones de Autenticación (Auth) ---
   const handleLogin = (email: string, pass: string): boolean => {
-    // --- SIMULACIÓN DE LOGIN ---
-    // En un proyecto real, esto sería una llamada a tu backend
-    if (email === 'alumno@duoc.cl' && pass === 'Duoc1234*') {
-      setUser({ name: 'Alumno Duoc', email: email });
-      showToast('Inicio de sesión exitoso', 'success');
-      return true; // Éxito
-    }
-    showToast('Email o contraseña incorrectos', 'error');
-    return false; // Fracaso
+    // Deprecated: Logic moved to LoginForm.tsx
+    console.log('Unused params:', email, pass);
+    return false;
+  };
+
+  // Nueva función para actualizar estado tras login exitoso
+  const loginUser = (userData: User) => {
+    setUser(userData);
   };
 
   const handleRegister = (formData: any): boolean => {
-    // --- SIMULACIÓN DE REGISTRO ---
-    // En un proyecto real, esto enviaría formData a tu backend
-    console.log('Datos de registro:', formData);
-    showToast('Registro exitoso. Ahora puedes iniciar sesión.', 'success');
-    return true; // Éxito
-    // Tu lógica original no iniciaba sesión, solo mostraba el formulario de login.
+    // Deprecated: Logic moved to RegisterForm.tsx
+    console.log('Unused register data:', formData);
+    return true;
   };
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario'); // Limpia también el raw item si existe
     showToast('Sesión cerrada', 'info');
   };
 
@@ -249,7 +247,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
       showToast('Por favor, completa todos los campos', 'error');
       return;
     }
-    
+
     setReviews(prevReviews => {
       const productReviews = prevReviews[productId] || [];
       return {
@@ -257,12 +255,13 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
         [productId]: [...productReviews, { rating, comment }],
       };
     });
-    
+
     setShowReviewModal(false); // Cierra el modal al enviar
     showToast('Reseña enviada con éxito', 'success');
   };
 
   const handleConfirmPurchase = (checkoutData: CheckoutData, pointsToRedeem: number): number => {
+    console.log('Procesando compra para:', checkoutData);
     // 1. Calcular total y puntos
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const pointsEarned = Math.floor(total / 100);
@@ -275,7 +274,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
 
     // 4. Mostrar toast
     showToast('¡Compra confirmada! Gracias.', 'success');
-    
+
     // 5. Devolver puntos ganados para que el modal "ThankYou" los muestre
     return pointsEarned;
   };
@@ -292,12 +291,13 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     user,
     userPoints,
     handleLogin,
+    loginUser, // Nueva
     handleRegister,
     handleLogout,
     reviews,
     handleSubmitReview,
     handleConfirmPurchase,
-    
+
     // Modals y sus controladores
     currentProductId,
     setCurrentProductId,
@@ -311,13 +311,13 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     setShowThankYou,
     showAuth,
     setShowAuth,
-    
+
     // Puntos en tránsito
     pointsToRedeem,
     setPointsToRedeem,
     pointsEarned,
     setPointsEarned,
-    
+
     // Toast
     toast,
     showToast,

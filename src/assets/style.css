@@ -129,3 +129,27 @@ h1, h2, h3 {
     height: 250px;
   }
 }
+
+/* === FIX PARA MODAL LOGIN (NUEVO - Z-INDEX Y POSICIONAMIENTO) === */
+.modal {
+  z-index: 1055 !important;  /* Alto para que se superponga a Navbar/Banner */
+}
+
+.modal-backdrop {
+  z-index: 1050 !important;  /* Backdrop oscuro por encima de todo menos modal */
+}
+
+.hero-banner {  /* Ajusta si tu banner en Home.tsx tiene esta clase */
+  z-index: 500;  /* Bajo para que modal pase por encima */
+  position: relative;  /* Evita fixed si tapa el modal */
+}
+
+main {
+  padding-top: 80px;  /* Espacio para Navbar fijo, evita que contenido se tape */
+  min-height: 100vh;  /* Altura mínima para scroll */
+}
+
+/* Si tu Navbar es fijo, agrega sombra ligera para no tapar */
+.navbar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  /* Sombra para separación visual */
+}
