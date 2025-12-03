@@ -6,6 +6,7 @@ import { useShop } from '../../context/ShopContext';  // Para toasts
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;  // Para switch a registro (ajusta si no lo usas)
+  onLoginSuccess?: () => void;  // ← Nueva prop opcional para éxito (ej. cierra modal)
 }
 
 export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
