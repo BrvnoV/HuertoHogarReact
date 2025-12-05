@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { Form, Button } from 'react-bootstrap';
 import api from '../../utils/axiosInstance';
 import { useShop } from '../../context/ShopContext';
-import { 
-  soloLetrasEspacios, 
-  // isValidEmail,  // Reemplazamos con regex custom
-  validPhone, 
-  strongPassword, 
+import {
+  soloLetrasEspacios,
+  validPhone,
+  strongPassword,
   comunas,
 } from '../../data/constants';
 
@@ -15,20 +14,18 @@ interface RegisterFormProps {
   onRegisterSuccess: () => void;
 }
 
-// Estado inicial (agregamos apellido y fechaNacimiento)
 const initialFormData = {
   nombre: '',
   apellido: '',
   fechaNacimiento: '',
   email: '',
-  phone: '',  // Opcional
-  comuna: '',  // Opcional
+  phone: '',
+  comuna: '',
   password: '',
   confirmPassword: '',
   terms: false,
 };
 
-// Estado inicial para errores (agregamos nuevos campos)
 const initialErrors = {
   general: '',
   nombre: '',
@@ -43,31 +40,27 @@ const initialErrors = {
 };
 
 export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: RegisterFormProps) {
-  const { showToast } = useShop();  // Mantenemos toast
+  const { showToast } = useShop();
 
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState(initialErrors);
 
-  // Función genérica para manejar cambios (mantenida)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
     const isCheckbox = type === 'checkbox';
-    
+
     setFormData(prev => ({
       ...prev,
       [id]: isCheckbox ? (e.target as HTMLInputElement).checked : value,
     }));
 
-    // Validar en tiempo real
     validateField(id, value);
   };
 
-  // Validación custom para email (ajustada a requisitos exactos)
   const validarEmail = (email: string): boolean => {
     return /@(?:duocuc\.cl|gmail\.com|profesor\.duoc\.cl)$/.test(email);
   };
 
-  // Nueva: Validación de edad (>18)
   const validarEdad = (fecha: string): boolean => {
     if (!fecha) return false;
     const nacimiento = new Date(fecha);
@@ -80,12 +73,11 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     return edad >= 18;
   };
 
-  // Función para validar un campo específico (agregamos nuevos casos)
   const validateField = (id: string, value: any) => {
     let errorMsg = '';
     switch (id) {
       case 'nombre':
-      case 'apellido':  // Aplica misma regla
+      case 'apellido':
         if (!soloLetrasEspacios(value) || value.length > 50) {
           errorMsg = 'Solo letras y espacios, máx 50 caracteres.';
         }
@@ -96,7 +88,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         }
         break;
       case 'email':
-        if (!validarEmail(value)) {  // Usa custom regex
+        if (!validarEmail(value)) {
           errorMsg = 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.';
         }
         break;
@@ -111,10 +103,9 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         }
         break;
       case 'password':
-        if (!strongPassword(value)) {  // Mantenemos tu función (ajusta mensaje si quieres menos estricto)
-          errorMsg = 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.';  // O quita "símbolo" si no lo pides
+        if (!strongPassword(value)) {
+          errorMsg = 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.';
         }
-        // Validar confirmación si cambia
         if (formData.confirmPassword && value !== formData.confirmPassword) {
           setErrors(prev => ({ ...prev, confirmPassword: 'Las contraseñas no coinciden.' }));
         } else if (formData.confirmPassword) {
@@ -136,60 +127,60 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     return !errorMsg;
   };
 
-  // Validar todo el formulario (corregido: incluye todas las keys)
-const validateForm = () => {
-  // Inicializa con estructura completa (evita missing props)
-  const newErrors = {
-    general: '',  // Siempre vacío en validateForm (solo para campos)
-    nombre: '',
-    apellido: '',
-    fechaNacimiento: '',
-    email: '',
-    phone: '',
-    comuna: '',
-    password: '',
-    confirmPassword: '',
-    terms: ''
+  const validateForm = () => {
+    const newErrors = {
+      general: '',
+      nombre: '',
+      apellido: '',
+      fechaNacimiento: '',
+      email: '',
+      phone: '',
+      comuna: '',
+      password: '',
+      confirmPassword: '',
+      terms: ''
+    };
+
+    newErrors.nombre = formData.nombre ? (soloLetrasEspacios(formData.nombre) && formData.nombre.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Nombre requerido';
+    newErrors.apellido = formData.apellido ? (soloLetrasEspacios(formData.apellido) && formData.apellido.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Apellido requerido';
+    newErrors.fechaNacimiento = formData.fechaNacimiento ? (validarEdad(formData.fechaNacimiento) ? '' : 'Debes ser mayor de 18 años.') : 'Fecha requerida';
+    newErrors.email = formData.email ? (validarEmail(formData.email) ? '' : 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.') : 'Email requerido';
+    newErrors.phone = formData.phone ? (validPhone(formData.phone) ? '' : 'Teléfono no válido (8-15 dígitos).') : '';
+    newErrors.comuna = formData.comuna ? '' : '';  // Opcional
+    newErrors.password = formData.password ? (strongPassword(formData.password) ? '' : 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.') : 'Contraseña requerida';
+    newErrors.confirmPassword = formData.confirmPassword === formData.password ? '' : 'Las contraseñas no coinciden.';
+    newErrors.terms = formData.terms ? '' : 'Debes aceptar los términos.';
+
+    setErrors(newErrors);
+    return !Object.values(newErrors).slice(1).some(error => error);
   };
 
-  // Sobrescribe solo errores específicos
-  newErrors.nombre = formData.nombre ? (soloLetrasEspacios(formData.nombre) && formData.nombre.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Nombre requerido';
-  newErrors.apellido = formData.apellido ? (soloLetrasEspacios(formData.apellido) && formData.apellido.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Apellido requerido';
-  newErrors.fechaNacimiento = formData.fechaNacimiento ? (validarEdad(formData.fechaNacimiento) ? '' : 'Debes ser mayor de 18 años.') : 'Fecha requerida';
-  newErrors.email = formData.email ? (validarEmail(formData.email) ? '' : 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.') : 'Email requerido';
-  newErrors.phone = formData.phone ? (validPhone(formData.phone) ? '' : 'Teléfono no válido (8-15 dígitos).') : '';
-  newErrors.comuna = formData.comuna ? '' : '';  // Opcional, siempre OK
-  newErrors.password = formData.password ? (strongPassword(formData.password) ? '' : 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.') : 'Contraseña requerida';
-  newErrors.confirmPassword = formData.confirmPassword === formData.password ? '' : 'Las contraseñas no coinciden.';
-  newErrors.terms = formData.terms ? '' : 'Debes aceptar los términos.';
-
-  setErrors(newErrors);
-  // Devuelve true si no hay errores (excepto general)
-  return !Object.values(newErrors).slice(1).some(error => error);  // Ignora general
-};
-
-  // Submit: Cambiado a axios.post (integra con BE)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateForm()) {
       try {
-        // POST real a /api/usuarios (solo campos requeridos; extras opcionales)
-        await api.post('/api/usuarios', {
+        // Endpoint exacto de tu controller
+        const payload = {
           nombre: formData.nombre,
           apellido: formData.apellido,
           fechaNacimiento: formData.fechaNacimiento,
           email: formData.email,
-          contraseña: formData.password,  // Renombrado para BE
-          // Opcionales: phone: formData.phone, comuna: formData.comuna
-        });
-        showToast('¡Registro exitoso! Ve al login.', 'success');  // Usa tu toast
-        onRegisterSuccess();  // Vuelve al login
-        setFormData(initialFormData);  // Resetea
+          contraseña: formData.password,
+          phone: formData.phone || null,
+          comuna: formData.comuna || null,
+          role: 'USUARIO'  // Default de rúbrica
+        };
+        console.log('Enviando payload:', payload);  // Debug
+        await api.post('/usuarios/register', payload);  // URL de tu controller
+        showToast('¡Registro exitoso! Ve al login.', 'success');
+        onRegisterSuccess();
+        setFormData(initialFormData);
         setErrors(initialErrors);
       } catch (err: any) {
+        console.log('Error registro:', err.response?.data);
         showToast(err.response?.data?.message || 'Error en el servidor', 'error');
-        setErrors({ ...errors, general: 'Error en registro' });  // Agrega error general si quieres
+        setErrors({ ...errors, general: 'Error en registro' });
       }
     } else {
       showToast('Corrige los errores en el formulario', 'error');
@@ -198,7 +189,6 @@ const validateForm = () => {
 
   return (
     <Form noValidate onSubmit={handleSubmit}>
-      {/* Nombre */}
       <Form.Group className="mb-3" controlId="nombre">
         <Form.Label>Nombre</Form.Label>
         <Form.Control
@@ -212,7 +202,6 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.nombre}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Apellido (nuevo) */}
       <Form.Group className="mb-3" controlId="apellido">
         <Form.Label>Apellido</Form.Label>
         <Form.Control
@@ -226,22 +215,20 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.apellido}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Fecha Nacimiento (nuevo) */}
       <Form.Group className="mb-3" controlId="fechaNacimiento">
         <Form.Label>Fecha de Nacimiento</Form.Label>
-        <input  // Usa input nativo para date (Bootstrap lo soporta)
+        <input
           type="date"
           id="fechaNacimiento"
           value={formData.fechaNacimiento}
           onChange={handleChange}
-          max={new Date().toISOString().split('T')[0]}  // No permite futuro
+          max={new Date().toISOString().split('T')[0]}
           className={`form-control ${errors.fechaNacimiento ? 'is-invalid' : formData.fechaNacimiento ? 'is-valid' : ''}`}
           required
         />
         <Form.Control.Feedback type="invalid">{errors.fechaNacimiento}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Email (ajustado) */}
       <Form.Group className="mb-3" controlId="email">
         <Form.Label>Email</Form.Label>
         <Form.Control
@@ -255,7 +242,6 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Phone (mantenido opcional) */}
       <Form.Group className="mb-3" controlId="phone">
         <Form.Label>Teléfono (opcional)</Form.Label>
         <Form.Control
@@ -268,7 +254,6 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.phone}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Comuna (mantenido opcional) */}
       <Form.Group className="mb-3" controlId="comuna">
         <Form.Label>Comuna (opcional)</Form.Label>
         <Form.Select
@@ -285,7 +270,6 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.comuna}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Password */}
       <Form.Group className="mb-3" controlId="password">
         <Form.Label>Contraseña</Form.Label>
         <Form.Control
@@ -299,7 +283,6 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Confirm Password */}
       <Form.Group className="mb-3" controlId="confirmPassword">
         <Form.Label>Confirmar Contraseña</Form.Label>
         <Form.Control
@@ -313,7 +296,6 @@ const validateForm = () => {
         <Form.Control.Feedback type="invalid">{errors.confirmPassword}</Form.Control.Feedback>
       </Form.Group>
 
-      {/* Terms (mantenido) */}
       <Form.Group className="mb-3" controlId="terms">
         <Form.Check
           type="checkbox"

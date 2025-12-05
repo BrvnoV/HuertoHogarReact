@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import api from '../../utils/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../../context/ShopContext';  // Para toasts
+import { useShop } from '../../context/ShopContext';
 
 interface LoginFormProps {
-  onSwitchToRegister: () => void;  // Para switch a registro
-  onLoginSuccess?: () => void;  // Opcional para éxito (cierra modal)
+  onSwitchToRegister: () => void;
+  onLoginSuccess?: () => void;
 }
 
 export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginFormProps) {
@@ -22,7 +22,7 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
-    setError('');  // Limpia error al tipear
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,35 +35,41 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
     setLoading(true);
     setError('');
     try {
-      // REAL: Llama al BE para login
-      const res = await api.post('/api/login', {
+      // Endpoint exacto de tu controller
+      const res = await api.post('/usuarios/login', {
         email: formData.email,
-        contraseña: formData.password
+        contrasena: formData.password  // Campo de BE (LoginRequest.getContrasena)
       });
 
-      // Guarda JWT y datos en localStorage
-      localStorage.setItem('token', res.data.token);
-      // localStorage.setItem('usuario', res.data.nombre); // Ya lo hace el context
+      const token = res.data.token;
+      const usuario = res.data.usuario;
+      const fullName = `${usuario.nombre} ${usuario.apellido || ''}`.trim();
 
-      // Actualiza estado global
-      // Asumimos que el BE devuelve un objeto usuario o construimos uno
-      const userData = { name: res.data.nombre, email: formData.email };
+      localStorage.setItem('token', token);
+
+      const userData = { name: fullName, email: formData.email };
       loginUser(userData);
 
-      showToast(`¡Bienvenido, ${res.data.nombre}!`, 'success');
-      navigate('/');
+      showToast(`¡Bienvenido, ${fullName}!`, 'success');
+      navigate('/');  // Redirige home
 
       if (onLoginSuccess) {
         onLoginSuccess();
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      const msg = err.response?.data?.message || 'Credenciales inválidas o error de servidor';
-      setError(msg);
-      showToast('Error en login: ' + msg, 'error');
+      console.error('Login error:', err.response?.data);  // Debug
+      const msg = err.response?.data || 'Credenciales inválidas';
+      setError(typeof msg === 'string' ? msg : 'Error desconocido');
+      showToast('Error en login: ' + (typeof msg === 'string' ? msg : 'Inténtalo de nuevo'), 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwitchToRegister = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log('Switching to register...');
+    onSwitchToRegister();
   };
 
   return (
@@ -75,7 +81,7 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
           value={formData.email}
           onChange={handleChange}
           isInvalid={!!error}
-          placeholder="ejemplo@duocuc.cl"
+          placeholder="ejemplo@gmail.com"
           required
         />
       </Form.Group>
@@ -97,10 +103,7 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
       </Button>
 
       <p className="text-center">
-        <a href="#" onClick={(e) => {
-          e.preventDefault();
-          onSwitchToRegister();
-        }}>
+        <a href="#" onClick={handleSwitchToRegister}>
           ¿No tienes cuenta? Regístrate
         </a>
       </p>

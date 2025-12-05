@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Crea instancia con baseURL para proxy
 const api = axios.create({
-  baseURL: '/api',  // Relativo para Vite proxy
+  baseURL: 'http://localhost:8080/api/v1',  // Relativo para Vite proxy
 });
 
 // Interceptor para agregar JWT automáticamente
