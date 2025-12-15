@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Button } from 'react-bootstrap';
+import { Form, Button, Alert } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';  // Si usas routing
 import api from '../../utils/axiosInstance';
 import { useShop } from '../../context/ShopContext';
 import {
@@ -14,47 +15,75 @@ interface RegisterFormProps {
   onRegisterSuccess: () => void;
 }
 
-const initialFormData = {
+interface RegisterFormData {
+  nombre: string;
+  apellido: string;
+  fechaNacimiento: string;
+  email: string;
+  telefono: string;  // FIX: Estandarizado a 'telefono'
+  comuna: string;
+  contraseña: string;  // FIX: Estandarizado a 'contraseña'
+  confirmContraseña: string;  // FIX: Confirmación en español
+  terms: boolean;
+}
+
+interface Errors {
+  general: string;
+  nombre: string;
+  apellido: string;
+  fechaNacimiento: string;
+  email: string;
+  telefono: string;
+  comuna: string;
+  contraseña: string;
+  confirmContraseña: string;
+  terms: string;
+}
+
+const initialFormData: RegisterFormData = {
   nombre: '',
   apellido: '',
   fechaNacimiento: '',
   email: '',
-  phone: '',
+  telefono: '',  // FIX: Cambiado de 'phone' a 'telefono'
   comuna: '',
-  password: '',
-  confirmPassword: '',
+  contraseña: '',  // FIX: Cambiado de 'password' a 'contraseña'
+  confirmContraseña: '',  // FIX: Cambiado de 'confirmPassword' a 'confirmContraseña'
   terms: false,
 };
 
-const initialErrors = {
+const initialErrors: Errors = {
   general: '',
   nombre: '',
   apellido: '',
   fechaNacimiento: '',
   email: '',
-  phone: '',
+  telefono: '',
   comuna: '',
-  password: '',
-  confirmPassword: '',
+  contraseña: '',
+  confirmContraseña: '',
   terms: '',
 };
 
 export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: RegisterFormProps) {
   const { showToast } = useShop();
+  const navigate = useNavigate();  // Si usas routing; remueve si no
 
-  const [formData, setFormData] = useState(initialFormData);
-  const [errors, setErrors] = useState(initialErrors);
+  const [formData, setFormData] = useState<RegisterFormData>(initialFormData);
+  const [errors, setErrors] = useState<Errors>(initialErrors);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { id, value, type } = e.target;
     const isCheckbox = type === 'checkbox';
+    const checked = isCheckbox ? (e.target as HTMLInputElement).checked : false;
 
     setFormData(prev => ({
       ...prev,
-      [id]: isCheckbox ? (e.target as HTMLInputElement).checked : value,
+      [id]: isCheckbox ? checked : value,
     }));
 
-    validateField(id, value);
+    validateField(id, isCheckbox ? checked : value);
   };
 
   const validarEmail = (email: string): boolean => {
@@ -78,22 +107,22 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     switch (id) {
       case 'nombre':
       case 'apellido':
-        if (!soloLetrasEspacios(value) || value.length > 50) {
+        if (value && (!soloLetrasEspacios(value) || value.length > 50)) {
           errorMsg = 'Solo letras y espacios, máx 50 caracteres.';
         }
         break;
       case 'fechaNacimiento':
-        if (!validarEdad(value)) {
+        if (value && !validarEdad(value)) {
           errorMsg = 'Debes ser mayor de 18 años.';
         }
         break;
       case 'email':
-        if (!validarEmail(value)) {
+        if (value && !validarEmail(value)) {
           errorMsg = 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.';
         }
         break;
-      case 'phone':
-        if (!validPhone(value)) {
+      case 'telefono':
+        if (value && !validPhone(value)) {
           errorMsg = 'Teléfono no válido (8-15 dígitos).';
         }
         break;
@@ -102,18 +131,19 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
           errorMsg = 'Selecciona una comuna.';
         }
         break;
-      case 'password':
-        if (!strongPassword(value)) {
+      case 'contraseña':
+        if (value && !strongPassword(value)) {
           errorMsg = 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.';
         }
-        if (formData.confirmPassword && value !== formData.confirmPassword) {
-          setErrors(prev => ({ ...prev, confirmPassword: 'Las contraseñas no coinciden.' }));
-        } else if (formData.confirmPassword) {
-          setErrors(prev => ({ ...prev, confirmPassword: '' }));
+        // Valida coincidencia con confirm
+        if (formData.confirmContraseña && value !== formData.confirmContraseña) {
+          setErrors(prev => ({ ...prev, confirmContraseña: 'Las contraseñas no coinciden.' }));
+        } else if (formData.confirmContraseña) {
+          setErrors(prev => ({ ...prev, confirmContraseña: '' }));
         }
         break;
-      case 'confirmPassword':
-        if (value !== formData.password) {
+      case 'confirmContraseña':
+        if (value && value !== formData.contraseña) {
           errorMsg = 'Las contraseñas no coinciden.';
         }
         break;
@@ -128,16 +158,16 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
   };
 
   const validateForm = () => {
-    const newErrors = {
+    const newErrors: Errors = {
       general: '',
       nombre: '',
       apellido: '',
       fechaNacimiento: '',
       email: '',
-      phone: '',
+      telefono: '',
       comuna: '',
-      password: '',
-      confirmPassword: '',
+      contraseña: '',
+      confirmContraseña: '',
       terms: ''
     };
 
@@ -145,42 +175,58 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
     newErrors.apellido = formData.apellido ? (soloLetrasEspacios(formData.apellido) && formData.apellido.length <= 50 ? '' : 'Solo letras y espacios, máx 50 caracteres.') : 'Apellido requerido';
     newErrors.fechaNacimiento = formData.fechaNacimiento ? (validarEdad(formData.fechaNacimiento) ? '' : 'Debes ser mayor de 18 años.') : 'Fecha requerida';
     newErrors.email = formData.email ? (validarEmail(formData.email) ? '' : 'Email debe terminar en @duocuc.cl, @gmail.com o @profesor.duoc.cl.') : 'Email requerido';
-    newErrors.phone = formData.phone ? (validPhone(formData.phone) ? '' : 'Teléfono no válido (8-15 dígitos).') : '';
-    newErrors.comuna = formData.comuna ? '' : '';  // Opcional
-    newErrors.password = formData.password ? (strongPassword(formData.password) ? '' : 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.') : 'Contraseña requerida';
-    newErrors.confirmPassword = formData.confirmPassword === formData.password ? '' : 'Las contraseñas no coinciden.';
+    newErrors.telefono = formData.telefono ? (validPhone(formData.telefono) ? '' : 'Teléfono no válido (8-15 dígitos).') : '';
+    newErrors.comuna = formData.comuna ? '' : 'Selecciona una comuna.';  // Si es requerido
+    newErrors.contraseña = formData.contraseña ? (strongPassword(formData.contraseña) ? '' : 'Debe tener 8+ caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.') : 'Contraseña requerida';
+    newErrors.confirmContraseña = formData.confirmContraseña === formData.contraseña ? '' : 'Las contraseñas no coinciden.';
     newErrors.terms = formData.terms ? '' : 'Debes aceptar los términos.';
 
     setErrors(newErrors);
-    return !Object.values(newErrors).slice(1).some(error => error);
+    return Object.values(newErrors).every(error => !error);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateForm()) {
+      setLoading(true);
       try {
-        // Endpoint exacto de tu controller
+        // Payload corregido: Usa 'contraseña' como clave para DTO
         const payload = {
           nombre: formData.nombre,
           apellido: formData.apellido,
           fechaNacimiento: formData.fechaNacimiento,
           email: formData.email,
-          contraseña: formData.password,
-          phone: formData.phone || null,
-          comuna: formData.comuna || null,
-          role: 'USUARIO'  // Default de rúbrica
+          contraseña: formData.contraseña,  // FIX: Clave correcta para backend DTO
+          telefono: formData.telefono,  // FIX: Clave correcta
+          comuna: formData.comuna
         };
-        console.log('Enviando payload:', payload);  // Debug
-        await api.post('/usuarios/register', payload);  // URL de tu controller
+
+        console.log('Enviando payload:', payload);
+
+        const response = await api.post('/usuarios/register', payload);  // FIX: Solo un await, sin duplicado
+        console.log('Registro exitoso:', response.data);
+
         showToast('¡Registro exitoso! Ve al login.', 'success');
         onRegisterSuccess();
         setFormData(initialFormData);
         setErrors(initialErrors);
+        // Opcional: navigate('/login');
       } catch (err: any) {
-        console.log('Error registro:', err.response?.data);
-        showToast(err.response?.data?.message || 'Error en el servidor', 'error');
-        setErrors({ ...errors, general: 'Error en registro' });
+        console.error('Error registro:', err);
+        const status = err.response?.status;
+        let msg = 'Error al registrarse';
+        if (status === 400) {
+          msg = err.response?.data?.message || 'Datos inválidos';
+        } else if (status === 409) {
+          msg = 'Email ya registrado';
+        } else if (status === 500) {
+          msg = 'Error interno del servidor';
+        }
+        showToast(msg, 'error');
+        setErrors({ ...errors, general: msg });
+      } finally {
+        setLoading(false);
       }
     } else {
       showToast('Corrige los errores en el formulario', 'error');
@@ -189,8 +235,10 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
 
   return (
     <Form noValidate onSubmit={handleSubmit}>
+      {errors.general && <Alert variant="danger">{errors.general}</Alert>}
+
       <Form.Group className="mb-3" controlId="nombre">
-        <Form.Label>Nombre</Form.Label>
+        <Form.Label>Nombre *</Form.Label>
         <Form.Control
           type="text"
           value={formData.nombre}
@@ -203,7 +251,7 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="apellido">
-        <Form.Label>Apellido</Form.Label>
+        <Form.Label>Apellido *</Form.Label>
         <Form.Control
           type="text"
           value={formData.apellido}
@@ -216,21 +264,21 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="fechaNacimiento">
-        <Form.Label>Fecha de Nacimiento</Form.Label>
-        <input
+        <Form.Label>Fecha de Nacimiento *</Form.Label>
+        <Form.Control
           type="date"
-          id="fechaNacimiento"
           value={formData.fechaNacimiento}
           onChange={handleChange}
           max={new Date().toISOString().split('T')[0]}
-          className={`form-control ${errors.fechaNacimiento ? 'is-invalid' : formData.fechaNacimiento ? 'is-valid' : ''}`}
+          isInvalid={!!errors.fechaNacimiento}
+          isValid={!errors.fechaNacimiento && formData.fechaNacimiento.length > 0}
           required
         />
         <Form.Control.Feedback type="invalid">{errors.fechaNacimiento}</Form.Control.Feedback>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="email">
-        <Form.Label>Email</Form.Label>
+        <Form.Label>Email *</Form.Label>
         <Form.Control
           type="email"
           value={formData.email}
@@ -242,16 +290,16 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
       </Form.Group>
 
-      <Form.Group className="mb-3" controlId="phone">
+      <Form.Group className="mb-3" controlId="telefono">
         <Form.Label>Teléfono (opcional)</Form.Label>
         <Form.Control
           type="tel"
-          value={formData.phone}
+          value={formData.telefono}
           onChange={handleChange}
-          isInvalid={!!errors.phone}
-          isValid={!errors.phone && formData.phone.length > 0}
+          isInvalid={!!errors.telefono}
+          isValid={!errors.telefono && formData.telefono.length > 0}
         />
-        <Form.Control.Feedback type="invalid">{errors.phone}</Form.Control.Feedback>
+        <Form.Control.Feedback type="invalid">{errors.telefono}</Form.Control.Feedback>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="comuna">
@@ -270,36 +318,37 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         <Form.Control.Feedback type="invalid">{errors.comuna}</Form.Control.Feedback>
       </Form.Group>
 
-      <Form.Group className="mb-3" controlId="password">
-        <Form.Label>Contraseña</Form.Label>
+      <Form.Group className="mb-3" controlId="contraseña">
+        <Form.Label>Contraseña *</Form.Label>
         <Form.Control
           type="password"
-          value={formData.password}
+          value={formData.contraseña}
           onChange={handleChange}
-          isInvalid={!!errors.password}
-          isValid={!errors.password && formData.password.length > 0}
+          isInvalid={!!errors.contraseña}
+          isValid={!errors.contraseña && formData.contraseña.length > 0}
           required
+          minLength={8}
         />
-        <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
+        <Form.Control.Feedback type="invalid">{errors.contraseña}</Form.Control.Feedback>
       </Form.Group>
 
-      <Form.Group className="mb-3" controlId="confirmPassword">
-        <Form.Label>Confirmar Contraseña</Form.Label>
+      <Form.Group className="mb-3" controlId="confirmContraseña">
+        <Form.Label>Confirmar Contraseña *</Form.Label>
         <Form.Control
           type="password"
-          value={formData.confirmPassword}
+          value={formData.confirmContraseña}
           onChange={handleChange}
-          isInvalid={!!errors.confirmPassword}
-          isValid={!errors.confirmPassword && formData.confirmPassword.length > 0}
+          isInvalid={!!errors.confirmContraseña}
+          isValid={!errors.confirmContraseña && formData.confirmContraseña.length > 0}
           required
         />
-        <Form.Control.Feedback type="invalid">{errors.confirmPassword}</Form.Control.Feedback>
+        <Form.Control.Feedback type="invalid">{errors.confirmContraseña}</Form.Control.Feedback>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="terms">
         <Form.Check
           type="checkbox"
-          label="Acepto los términos y condiciones"
+          label="Acepto los términos y condiciones *"
           checked={formData.terms}
           onChange={handleChange}
           isInvalid={!!errors.terms}
@@ -309,14 +358,14 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
         />
       </Form.Group>
 
-      <Button variant="primary" type="submit" className="w-100">
-        Registrarse
+      <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+        {loading ? 'Registrando...' : 'Registrarse'}
       </Button>
 
       <p className="mt-3 text-center">
-        <a href="#" onClick={(e) => { e.preventDefault(); onSwitchToLogin(); }}>
-          Volver a Iniciar Sesión
-        </a>
+        <Button variant="link" onClick={onSwitchToLogin}>
+          ¿Ya tienes cuenta? Inicia sesión
+        </Button>
       </p>
     </Form>
   );

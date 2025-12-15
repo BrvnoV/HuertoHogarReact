@@ -3,6 +3,7 @@ import { Form, Button } from 'react-bootstrap';
 import api from '../../utils/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
+import { jwtDecode } from 'jwt-decode';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -47,7 +48,18 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
 
       localStorage.setItem('token', token);
 
-      const userData = { name: fullName, email: formData.email };
+      // Decodificar rol para el estado global
+      let userRole: 'ADMIN' | 'USUARIO' | undefined;
+      try {
+        const decoded: any = jwtDecode(token);
+        const rawRole = decoded.rol || decoded.role || decoded.authorities?.[0]?.authority || decoded.authorities?.[0];
+        if (rawRole === 'ROLE_ADMIN' || rawRole === 'ADMIN') userRole = 'ADMIN';
+        else if (rawRole === 'ROLE_USER' || rawRole === 'USUARIO') userRole = 'USUARIO';
+      } catch (e) {
+        console.error('Error decoding token:', e);
+      }
+
+      const userData = { name: fullName, email: formData.email, role: userRole };
       loginUser(userData);
 
       showToast(`¡Bienvenido, ${fullName}!`, 'success');

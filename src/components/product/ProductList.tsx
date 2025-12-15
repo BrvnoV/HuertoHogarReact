@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../utils/axiosInstance';
+import { useLocation } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
-import { Product } from '../../data/products';  // Solo Product por ahora
+import { Product } from '../../types';
 import ProductCard from './ProductCard';
-
-// Inline temporal para Category
-interface Category {
-  id: number;
-  name: string;
-}
 
 interface ProductListProps {
   title: string;
@@ -16,43 +10,26 @@ interface ProductListProps {
 }
 
 export default function ProductList({ title, limit }: ProductListProps) {
-  const { setProducts } = useShop();
+  const { products: productos, categories: categorias, loading } = useShop();
+  const location = useLocation();
 
-  const [productos, setProductos] = useState<Product[]>([]);
-  const [categorias, setCategorias] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('price-asc');
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [prodRes, catRes] = await Promise.all([
-          api.get('/api/productos'),
-          api.get('/api/categorias')
-        ]);
-        const fetchedProductos: Product[] = prodRes.data;
-        setProductos(fetchedProductos);
-        if (setProducts) setProducts(fetchedProductos);
-        setCategorias(catRes.data as Category[]);
-      } catch (err) {
-        console.error('Error fetch:', err);
-        setError('Error cargando productos. ¿Backend corriendo?');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+    const params = new URLSearchParams(location.search);
+    const catParam = params.get('category');
+    if (catParam) {
+      setCategory(catParam);
+    }
+  }, [location.search]);
 
   const getFilteredAndSortedProducts = () => {
     let filteredProducts = [...productos];
 
     if (category) {
-      filteredProducts = filteredProducts.filter(p => p.category === category);  // Ajusta field
+      // Comparison using category name from object
+      filteredProducts = filteredProducts.filter(p => p.category.nombre === category);
     }
 
     switch (sort) {
@@ -68,11 +45,11 @@ export default function ProductList({ title, limit }: ProductListProps) {
       default:
         filteredProducts.sort((a, b) => a.price - b.price);
     }
-    
+
     if (limit) {
       return filteredProducts.slice(0, limit);
     }
-    
+
     return filteredProducts;
   };
 
@@ -87,37 +64,28 @@ export default function ProductList({ title, limit }: ProductListProps) {
     );
   }
 
-  if (error) {
-    return (
-      <section className="container my-5">
-        <h2 className="text-center mb-4" style={{ color: 'white' }}>{title}</h2>
-        <p className="text-center text-red-500">{error}</p>
-      </section>
-    );
-  }
-
   return (
     <section id="products" className="container my-5">
       <h2 className="text-center mb-4" style={{ color: 'white' }}>{title}</h2>
-      
+
       {!limit && (
         <div className="row mb-3">
           <div className="col-md-6">
-            <select 
-              className="form-select" 
+            <select
+              className="form-select"
               id="categoryFilter"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="">Todas las Categorías</option>
               {categorias.map(cat => (
-                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
               ))}
             </select>
           </div>
           <div className="col-md-6">
-            <select 
-              className="form-select" 
+            <select
+              className="form-select"
               id="sortFilter"
               value={sort}
               onChange={(e) => setSort(e.target.value)}
@@ -133,7 +101,7 @@ export default function ProductList({ title, limit }: ProductListProps) {
       <div className="row mb-3 justify-content-center align-items-center" id="productGrid">
         {displayedProducts.length > 0 ? (
           displayedProducts.map(product => (
-            <ProductCard 
+            <ProductCard
               key={product.id}
               product={product}
             />

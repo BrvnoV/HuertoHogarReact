@@ -7,42 +7,51 @@ interface PrivateRouteProps {
   children?: React.ReactNode;
 }
 
-interface DecodedToken {
-  sub: string;
-  rol: string;
-  exp: number;
-}
-
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ requiredRole, children }) => {
   const token = localStorage.getItem('token');
 
-  // 1. Si no hay token, redirigir al login
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
   try {
-    // 2. Decodificar token
-    const decoded: DecodedToken = jwtDecode(token);
-    const currentTime = Date.now() / 1000;
+    const decoded: any = jwtDecode(token);
+    console.log("Decoded Token Check:", decoded);
 
-    // 3. Verificar expiración
+    const currentTime = Date.now() / 1000;
     if (decoded.exp < currentTime) {
+      console.log("Token expired");
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       return <Navigate to="/login" replace />;
     }
 
-    // 4. Verificar Rol (si se requiere uno específico)
-    if (requiredRole && decoded.rol !== requiredRole) {
-      return <Navigate to="/forbidden" replace />;
+    if (requiredRole) {
+      let userRole = decoded.rol || decoded.role || decoded.roles?.[0];
+
+      if (!userRole && decoded.authorities) {
+        const auth = Array.isArray(decoded.authorities) ? decoded.authorities[0] : decoded.authorities;
+        userRole = typeof auth === 'string' ? auth : auth?.authority;
+      }
+
+      console.log(`Required: ${requiredRole}, Found: ${userRole}`);
+
+      // FIX: Normalización extendida
+      if (userRole === 'ROLE_ADMIN') userRole = 'ADMIN';
+      if (userRole === 'ROLE_USER' || userRole === 'USER') userRole = 'USUARIO';  // FIX: Añade 'USER' → 'USUARIO'
+
+      // Jerarquía: ADMIN accede a todo; USUARIO solo a USUARIO
+      const hasAccess = (userRole === requiredRole) || 
+                        (requiredRole === 'USUARIO' && userRole === 'ADMIN');
+
+      if (!hasAccess) {
+        console.log(`Access denied: ${userRole} does not match ${requiredRole}`);
+        return <Navigate to="/forbidden" replace />;
+      }
     }
 
-    // 5. Si todo OK, renderizar contenido
     return children ? <>{children}</> : <Outlet />;
-
   } catch (error) {
-    // Si el token es inválido
     localStorage.removeItem('token');
     return <Navigate to="/login" replace />;
   }

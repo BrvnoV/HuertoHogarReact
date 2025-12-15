@@ -1,19 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { initialProducts, Product } from '../data/products';
+import api from '../utils/axiosInstance';
+import { Product, Category, User, CartItem } from '../types';
 
 // --- 1. DEFINICIÓN DE TIPOS (TYPESCRIPT) ---
-
-// Tipo para un item dentro del carrito (un producto + cantidad)
-interface CartItem extends Product {
-  quantity: number;
-}
-
-// Tipo para un usuario logueado (simple)
-interface User {
-  name: string;
-  email: string;
-}
 
 // Tipo para una reseña individual
 interface Review {
@@ -42,9 +32,12 @@ interface ToastState {
 
 // Tipo para TODO lo que nuestro contexto va a "proveer"
 interface ShopContextType {
-  // Estado de Productos
+  // Estado de Productos y Categorías
   products: Product[];
+  categories: Category[];
+  loading: boolean;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
 
   // Estado del Carrito
   cart: CartItem[];
@@ -103,7 +96,31 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider = ({ children }: { children: ReactNode }) => {
 
   // --- Estados Globales ---
-  const [products, setProducts] = useLocalStorage<Product[]>('products', initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Efecto para cargar datos iniciales desde el backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [prodRes, catRes] = await Promise.all([
+          api.get('/productos'),
+          api.get('/categorias'),
+        ]);
+        setProducts(prodRes.data);
+        setCategories(catRes.data);
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        // Fallback or empty state could be handled here
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);
   const [user, setUser] = useLocalStorage<User | null>('user', null);
   const [userPoints, setUserPoints] = useLocalStorage<number>('userPoints', 0);
@@ -127,11 +144,11 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     setToast({ message, variant, show: true });
     // Oculta el toast después de 3 segundos
     setTimeout(() => {
-      setToast(prev => ({ ...prev, show: false }));
+      setToast((prev: ToastState) => ({ ...prev, show: false }));
     }, 3000);
   };
 
-  const hideToast = () => setToast(prev => ({ ...prev, show: false }));
+  const hideToast = () => setToast((prev: ToastState) => ({ ...prev, show: false }));
 
   // --- Funciones de Carrito (Cart) ---
   const handleAddToCart = (productId: string) => {
@@ -144,14 +161,14 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // 1. Reducir el stock en la lista principal de productos
-    setProducts(prevProducts =>
-      prevProducts.map(p =>
+    setProducts((prevProducts: Product[]) =>
+      prevProducts.map((p: Product) =>
         p.id === productId ? { ...p, stock: p.stock - 1 } : p
       )
     );
 
     // 2. Añadir al carrito
-    setCart(prevCart => {
+    setCart((prevCart: CartItem[]) => {
       const cartItem = prevCart.find(item => item.id === productId);
       if (cartItem) {
         // Si ya existe, aumenta la cantidad
@@ -160,7 +177,8 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
         );
       } else {
         // Si es nuevo, lo añade con cantidad 1
-        return [...prevCart, { ...product, quantity: 1 }];
+        // Nos aseguramos de que product no sea undefined (ya validado arriba)
+        return [...prevCart, { ...product!, quantity: 1 }];
       }
     });
 
@@ -186,15 +204,15 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // 1. Actualizar stock en la lista de productos
-    setProducts(prevProducts =>
-      prevProducts.map(p =>
+    setProducts((prevProducts: Product[]) =>
+      prevProducts.map((p: Product) =>
         p.id === productId ? { ...p, stock: p.stock - quantityChange } : p
       )
     );
 
     // 2. Actualizar cantidad en el carrito
-    setCart(prevCart =>
-      prevCart.map(item =>
+    setCart((prevCart: CartItem[]) =>
+      prevCart.map((item: CartItem) =>
         item.id === productId ? { ...item, quantity: newQuantity } : item
       )
     );
@@ -205,14 +223,14 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     if (!cartItem) return;
 
     // 1. Devolver el stock a la lista principal
-    setProducts(prevProducts =>
-      prevProducts.map(p =>
+    setProducts((prevProducts: Product[]) =>
+      prevProducts.map((p: Product) =>
         p.id === productId ? { ...p, stock: p.stock + cartItem.quantity } : p
       )
     );
 
     // 2. Eliminar del carrito
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    setCart((prevCart: CartItem[]) => prevCart.filter((item: CartItem) => item.id !== productId));
 
     showToast('Producto eliminado del carrito', 'info');
   };
@@ -248,7 +266,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    setReviews(prevReviews => {
+    setReviews((prevReviews: ReviewsState) => {
       const productReviews = prevReviews[productId] || [];
       return {
         ...prevReviews,
@@ -267,7 +285,7 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
     const pointsEarned = Math.floor(total / 100);
 
     // 2. Actualizar puntos del usuario
-    setUserPoints(prevPoints => prevPoints + pointsEarned - pointsToRedeem);
+    setUserPoints((prevPoints: number) => prevPoints + pointsEarned - pointsToRedeem);
 
     // 3. Vaciar el carrito
     setCart([]);
@@ -283,7 +301,10 @@ export const ShopProvider = ({ children }: { children: ReactNode }) => {
   // Todos los estados y funciones que queremos que sean "globales"
   const value = {
     products,
+    categories,
+    loading, // Exportar loading
     setProducts,
+    setCategories, // Exposed setCategories
     cart,
     handleAddToCart,
     handleUpdateQuantity,

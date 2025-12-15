@@ -12,7 +12,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onCartClick, onLoginClick }: NavbarProps) {
-  
+
   // 2. Obtenemos el estado global que necesitamos
   const { cart, user, handleLogout } = useShop();
 
@@ -36,32 +36,32 @@ export default function Navbar({ onCartClick, onLoginClick }: NavbarProps) {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark">
       <div className="container-fluid">
-        
+
         {/* Título y Logo */}
         <Link className="navbar-brand d-flex align-items-center" to="/">
-          <img src="/assets/img/logo.png" alt="HuertoHogar Logo" style={{ height: '40px', marginRight: '10px' }}/>
+          <img src="/assets/img/logo.png" alt="HuertoHogar Logo" style={{ height: '40px', marginRight: '10px' }} />
           <h2 className="navbar-title m-0" style={{ fontSize: '1.5rem', color: 'white' }}>
             <i className="bi bi-flower1 me-2"></i>
             Huerto Hogar
           </h2>
         </Link>
-        
+
         {/* Botón Toggler para móvil */}
-        <button 
-          className="navbar-toggler" 
-          type="button" 
-          data-bs-toggle="collapse" 
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
-          aria-controls="navbarNav" 
-          aria-expanded="false" 
+          aria-controls="navbarNav"
+          aria-expanded="false"
           aria-label="Toggle navigation"
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-        
+
         {/* Contenido Colapsable */}
         <div className="collapse navbar-collapse" id="navbarNav">
-          
+
           {/* Links de Navegación */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
@@ -76,20 +76,25 @@ export default function Navbar({ onCartClick, onLoginClick }: NavbarProps) {
             <li className="nav-item">
               <NavLink className="nav-link" to="/blog">Blog</NavLink>
             </li>
+            {user?.role === 'ADMIN' && (
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/admin">Panel Admin</NavLink>
+              </li>
+            )}
           </ul>
-          
+
           {/* Formulario de Búsqueda (de tu HTML original) */}
           <form className="d-flex me-3">
-            <input 
-              className="form-control me-2" 
-              type="search" 
-              placeholder="Buscar productos" 
-              aria-label="Search" 
-              id="productSearch" 
+            <input
+              className="form-control me-2"
+              type="search"
+              placeholder="Buscar productos"
+              aria-label="Search"
+              id="productSearch"
             />
             <button className="btn btn-outline-light" type="submit">Buscar</button>
           </form>
-          
+
           {/* Iconos de Usuario y Carrito */}
           <ul className="navbar-nav">
             <li className="nav-item">

@@ -1,27 +1,17 @@
-// Definimos la "forma" de un producto para TypeScript
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  stock: number;
-  image: string;
-  description: string;
-  origin: string;
-  sustainability: string;
-  recipe: string;
-  recommendations: string[];
-}
+import { Product } from '../types';
+
+// Re-exportamos para compatibilidad mientras refactorizamos
+export type { Product };
 
 // Exportamos tu lista de productos. 
 // Fíjate que las rutas de las imágenes ahora apuntan a /public/
 export const initialProducts: Product[] = [
 
-        {
+    {
         id: 'FR001',
         name: 'Manzanas Fuji',
         price: 1200,
-        category: 'Frutas',
+        category: { id: 1, nombre: 'Frutas' },
         stock: 150,
         image: 'assets/img/apple.jpg',
         description: 'Manzanas crujientes del Valle del Maule.',
@@ -34,7 +24,7 @@ export const initialProducts: Product[] = [
         id: 'FR002',
         name: 'Naranjas Valencia',
         price: 1000,
-        category: 'Frutas',
+        category: { id: 1, nombre: 'Frutas' },
         stock: 200,
         image: 'assets/img/orange.jpg',
         description: 'Jugosas y ricas en vitamina C.',
@@ -47,7 +37,7 @@ export const initialProducts: Product[] = [
         id: 'FR003',
         name: 'Plátanos Cavendish',
         price: 800,
-        category: 'Frutas',
+        category: { id: 1, nombre: 'Frutas' },
         stock: 180,
         image: 'assets/img/platano.jpg',
         description: 'Plátanos dulces y cremosos.',
@@ -60,7 +50,7 @@ export const initialProducts: Product[] = [
         id: 'VR001',
         name: 'Zanahorias Orgánicas',
         price: 900,
-        category: 'Verduras',
+        category: { id: 2, nombre: 'Verduras' },
         stock: 100,
         image: 'assets/img/carrot.jpg',
         description: 'Crujientes y sin pesticidas.',
@@ -73,7 +63,7 @@ export const initialProducts: Product[] = [
         id: 'VR002',
         name: 'Espinacas Frescas',
         price: 1100,
-        category: 'Verduras',
+        category: { id: 2, nombre: 'Verduras' },
         stock: 120,
         image: 'assets/img/spinach.jpeg',
         description: 'Hojas frescas y llenas de nutrientes.',
@@ -86,7 +76,7 @@ export const initialProducts: Product[] = [
         id: 'VR003',
         name: 'Pimientos Tricolores',
         price: 1500,
-        category: 'Verduras',
+        category: { id: 2, nombre: 'Verduras' },
         stock: 80,
         image: 'assets/img/pimiento.jpeg',
         description: 'Pimientos rojos, verdes y amarillos vibrantes.',
@@ -99,7 +89,7 @@ export const initialProducts: Product[] = [
         id: 'PO001',
         name: 'Miel Orgánica',
         price: 5000,
-        category: 'Orgánicos',
+        category: { id: 3, nombre: 'Orgánicos' },
         stock: 50,
         image: 'assets/img/honey.jpg',
         description: 'Miel pura de apicultores locales.',
@@ -112,7 +102,7 @@ export const initialProducts: Product[] = [
         id: 'PO003',
         name: 'Quinua Orgánica',
         price: 3500,
-        category: 'Orgánicos',
+        category: { id: 3, nombre: 'Orgánicos' },
         stock: 70,
         image: 'assets/img/quinoa.jpeg',
         description: 'Quinua rica en proteínas y nutrientes.',
@@ -125,7 +115,7 @@ export const initialProducts: Product[] = [
         id: 'PL001',
         name: 'Leche Entera',
         price: 1200,
-        category: 'Lácteos',
+        category: { id: 4, nombre: 'Lácteos' },
         stock: 100,
         image: 'assets/img/milk.jpg',
         description: 'Leche fresca de granjas locales.',
@@ -135,16 +125,16 @@ export const initialProducts: Product[] = [
         recommendations: ['PO001', 'FR003']
     },
     {
-    id: 'PL002',
-    name: 'Yogurt Natural',
-    price: 1800,
-    category: 'Lácteos',
-    stock: 90,
-    image: 'assets/img/yogurt.jpg',
-    description: 'Yogurt cremoso sin azúcar añadido.',
-    origin: 'Región de Los Ríos, Chile',
-    sustainability: 'Elaborado con leche de vacas alimentadas con pasto natural.',
-    recipe: 'Ideal para desayunos con frutas o granola.',
-    recommendations: ['PL001', 'FR001']
-}
+        id: 'PL002',
+        name: 'Yogurt Natural',
+        price: 1800,
+        category: { id: 4, nombre: 'Lácteos' },
+        stock: 90,
+        image: 'assets/img/yogurt.jpg',
+        description: 'Yogurt cremoso sin azúcar añadido.',
+        origin: 'Región de Los Ríos, Chile',
+        sustainability: 'Elaborado con leche de vacas alimentadas con pasto natural.',
+        recipe: 'Ideal para desayunos con frutas o granola.',
+        recommendations: ['PL001', 'FR001']
+    }
 ];
