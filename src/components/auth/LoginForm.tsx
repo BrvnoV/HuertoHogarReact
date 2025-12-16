@@ -36,7 +36,10 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
     setLoading(true);
     setError('');
     try {
-      // Endpoint exacto de tu controller
+      // LOG TEMPORAL: Para debug – confirma qué se envía al backend (remueve después)
+      console.log('Enviando login request:', { email: formData.email, contrasena: formData.password });
+
+      // Endpoint exacto de tu controller (con axios baseURL, se hace /api/v1/usuarios/login)
       const res = await api.post('/usuarios/login', {
         email: formData.email,
         contrasena: formData.password  // Campo de BE (LoginRequest.getContrasena)
@@ -48,13 +51,14 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
 
       localStorage.setItem('token', token);
 
-      // Decodificar rol para el estado global
+      // Decodificar rol para el estado global – FIX: Prioriza decoded.role (de JwtService)
       let userRole: 'ADMIN' | 'USUARIO' | undefined;
       try {
         const decoded: any = jwtDecode(token);
-        const rawRole = decoded.rol || decoded.role || decoded.authorities?.[0]?.authority || decoded.authorities?.[0];
+        const rawRole = decoded.role || decoded.rol || decoded.authorities?.[0]?.authority || decoded.authorities?.[0];
         if (rawRole === 'ROLE_ADMIN' || rawRole === 'ADMIN') userRole = 'ADMIN';
-        else if (rawRole === 'ROLE_USER' || rawRole === 'USUARIO') userRole = 'USUARIO';
+        else if (rawRole === 'ROLE_USER' || rawRole === 'USUARIO' || rawRole === 'ROLE_USUARIO') userRole = 'USUARIO';
+        console.log('Rol decodificado:', rawRole, '→ Mapeado a:', userRole);  // LOG TEMPORAL
       } catch (e) {
         console.error('Error decoding token:', e);
       }
@@ -63,14 +67,27 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
       loginUser(userData);
 
       showToast(`¡Bienvenido, ${fullName}!`, 'success');
-      navigate('/');  // Redirige home
+      navigate('/');  // Redirige home (cámbialo a '/admin' si quieres auto para admin)
 
       if (onLoginSuccess) {
         onLoginSuccess();
       }
     } catch (err: any) {
-      console.error('Login error:', err.response?.data);  // Debug
-      const msg = err.response?.data || 'Credenciales inválidas';
+      // MEJORA: Manejo específico de errores por status
+      const status = err.response?.status;
+      console.error('Login error details:', { status, data: err.response?.data, url: err.config?.url });  // Debug mejorado
+
+      let msg = 'Error desconocido';
+      if (status === 401) {
+        msg = 'Credenciales inválidas. Verifica email y contraseña.';
+      } else if (status === 400) {
+        msg = 'Datos inválidos. Intenta de nuevo.';
+      } else if (status === 500) {
+        msg = 'Error en el servidor. Intenta más tarde.';
+      } else {
+        msg = err.response?.data?.message || err.response?.data || 'Error en login';
+      }
+
       setError(typeof msg === 'string' ? msg : 'Error desconocido');
       showToast('Error en login: ' + (typeof msg === 'string' ? msg : 'Inténtalo de nuevo'), 'error');
     } finally {
@@ -119,6 +136,8 @@ export default function LoginForm({ onSwitchToRegister, onLoginSuccess }: LoginF
           ¿No tienes cuenta? Regístrate
         </a>
       </p>
+      {/* Opcional: Agrega si quieres */}
+      {/* <p className="text-center"><a href="/forgot-password">¿Olvidaste tu contraseña?</a></p> */}
     </Form>
   );
 }

@@ -7,6 +7,7 @@ import ProductCard from './ProductCard';
 interface ProductListProps {
   title: string;
   limit?: number;
+  // Removida: data?: Product[];  // Ya no se necesita
 }
 
 export default function ProductList({ title, limit }: ProductListProps) {
@@ -25,10 +26,9 @@ export default function ProductList({ title, limit }: ProductListProps) {
   }, [location.search]);
 
   const getFilteredAndSortedProducts = () => {
-    let filteredProducts = [...productos];
+    let filteredProducts = [...productos];  // Solo del context, sin data externa
 
     if (category) {
-      // Comparison using category name from object
       filteredProducts = filteredProducts.filter(p => p.category.nombre === category);
     }
 

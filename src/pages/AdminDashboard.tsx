@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Form, Button, Table, Modal, Alert, Tab, Tabs, Spinner } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaSave, FaUserPlus, FaBox } from 'react-icons/fa'; // Icons opcionales
+import { FaPlus, FaEdit, FaTrash, FaSave, FaUserPlus, FaBox, FaSyncAlt } from 'react-icons/fa';
 import api from '../utils/axiosInstance';
 import { AxiosResponse } from 'axios';
 import { useShop } from '../context/ShopContext';
 import { Product, Category, User } from '../types';
 
 const AdminDashboard: React.FC = () => {
-  const { products: contextProducts, categories: contextCategories, setProducts: setGlobalProducts, setCategories: setGlobalCategories } = useShop();
+  const { setProducts: setGlobalProducts, setCategories: setGlobalCategories } = useShop();  // Solo setters, no getters para evitar loop
 
   // Tab State
   const [key, setKey] = useState('productos');
@@ -16,9 +16,11 @@ const AdminDashboard: React.FC = () => {
   // Loading States
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({ products: false, categories: false, users: false });
 
-  // --- PRODUCTOS STATE ---
+  // Flag para fetch inicial (evita loop)
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
 
-  const [localProducts, setLocalProducts] = useState<Product[]>(contextProducts);
+  // --- PRODUCTOS STATE ---
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [showProdModal, setShowProdModal] = useState(false);
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [prodFormData, setProdFormData] = useState({
@@ -32,7 +34,7 @@ const AdminDashboard: React.FC = () => {
   const [prodError, setProdError] = useState('');
 
   // --- CATEGORÍAS STATE ---
-  const [localCategories, setLocalCategories] = useState<Category[]>(contextCategories);
+  const [localCategories, setLocalCategories] = useState<Category[]>([]);
   const [showCatModal, setShowCatModal] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [catFormData, setCatFormData] = useState({
@@ -44,66 +46,60 @@ const AdminDashboard: React.FC = () => {
   // --- USUARIOS STATE ---
   const [users, setUsers] = useState<User[]>([]);
 
-  // Track if initial fetch has been attempted (to avoid loops)
-  const [initialFetchDone, setInitialFetchDone] = useState(false);
+  // FIX: Removí sync useEffects con context (causaban loop al actualizar context)
+  // Ahora, local state es independiente; context solo se actualiza en acciones
 
-  // Sync with context on mount/update
-  useEffect(() => {
-    setLocalProducts(contextProducts);
-  }, [contextProducts]);
-
-  useEffect(() => {
-    setLocalCategories(contextCategories);
-  }, [contextCategories]);
-
-  // Fetch initial data only once on mount if empty
+  // FIX: Fetch inicial SOLO al montar (deps vacías)
   useEffect(() => {
     if (!initialFetchDone) {
-      const fetchInitialData = async () => {
-        const productsEmpty = contextProducts.length === 0;
-        const categoriesEmpty = contextCategories.length === 0;
-
-        if (productsEmpty) {
-          setLoading(prev => ({ ...prev, products: true }));
-          try {
-            const res = await api.get('/productos');
-            setLocalProducts(res.data);
-            setGlobalProducts(res.data);
-          } catch (error) {
-            console.error('Error fetching products', error);
-          } finally {
-            setLoading(prev => ({ ...prev, products: false }));
-          }
-        }
-
-        if (categoriesEmpty) {
-          setLoading(prev => ({ ...prev, categories: true }));
-          try {
-            const res = await api.get('/categorias');
-            setLocalCategories(res.data);
-            if (setGlobalCategories) setGlobalCategories(res.data);
-          } catch (error) {
-            console.error('Error fetching categories', error);
-          } finally {
-            setLoading(prev => ({ ...prev, categories: false }));
-          }
-        }
-
-        setInitialFetchDone(true);
-      };
-
       fetchInitialData();
     }
-  }, []);  // Empty deps: Run only on mount
+  }, []);  // Deps vacías: Solo una vez al montar
+
+  const fetchInitialData = async () => {
+    // Fetch secuencial para evitar race conditions
+    if (localProducts.length === 0) {
+      await fetchProducts();
+    }
+    if (localCategories.length === 0) {
+      await fetchCategories();
+    }
+    setInitialFetchDone(true);
+  };
 
   // Fetch users only when tab active
   useEffect(() => {
     if (key === 'usuarios' && users.length === 0) {
       fetchUsers();
     }
-  }, [key]);
+  }, [key]);  // Dep segura
 
-  // --- FETCH HELPERS --- (removidos los fetchProducts/fetchCategories independientes, ya que se manejan en initial y manual)
+  // --- FETCH HELPERS ---
+  const fetchProducts = useCallback(async () => {
+    setLoading(prev => ({ ...prev, products: true }));
+    try {
+      const res = await api.get('/productos');
+      setLocalProducts(res.data);
+      setGlobalProducts(res.data);  // Actualiza context solo aquí
+    } catch (error) {
+      console.error('Error fetching products', error);
+    } finally {
+      setLoading(prev => ({ ...prev, products: false }));
+    }
+  }, [setGlobalProducts]);
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(prev => ({ ...prev, categories: true }));
+    try {
+      const res = await api.get('/categorias');
+      setLocalCategories(res.data);
+      if (setGlobalCategories) setGlobalCategories(res.data);  // Actualiza context solo aquí
+    } catch (error) {
+      console.error('Error fetching categories', error);
+    } finally {
+      setLoading(prev => ({ ...prev, categories: false }));
+    }
+  }, [setGlobalCategories]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(prev => ({ ...prev, users: true }));
@@ -112,7 +108,6 @@ const AdminDashboard: React.FC = () => {
       setUsers(res.data);
     } catch (error: any) {
       if (error.response?.status === 403) {
-        // Solo logout si es realmente acceso denegado
         console.error('Acceso denegado a usuarios');
       } else {
         console.error('Error fetching users', error);
@@ -122,12 +117,17 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  // --- PRODUCT HANDLERS --- 
+  // --- REFRESH MANUAL ---
+  const handleRefresh = useCallback(() => {
+    setInitialFetchDone(false);  // Reset para refetch
+    fetchInitialData();
+  }, []);
+
+  // --- PRODUCT HANDLERS --- (estabilizados con deps mínimas)
   const handleProdSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setProdError('');
 
-    // Validations
     if (prodFormData.price <= 0) {
       setProdError('El precio debe ser mayor a 0');
       return;
@@ -149,10 +149,8 @@ const AdminDashboard: React.FC = () => {
     }
 
     try {
-      // Set loading for optimistic feedback during submit
       setLoading(prev => ({ ...prev, products: true }));
 
-      // Payload with categoryId only (matches DTO)
       const payload = {
         name: prodFormData.name,
         price: parseFloat(prodFormData.price.toString()),
@@ -160,7 +158,7 @@ const AdminDashboard: React.FC = () => {
         stock: parseInt(prodFormData.stock.toString()),
         description: prodFormData.description,
         image: prodFormData.image,
-        origin: '',  // Add to form if needed
+        origin: '',
         sustainability: '',
         recipe: '',
         recommendations: ''
@@ -168,13 +166,11 @@ const AdminDashboard: React.FC = () => {
 
       let res: AxiosResponse<Product>;
       if (editingProd) {
-        // Update
         res = await api.put(`/productos/${editingProd.id}`, payload);
         const updated = localProducts.map(p => p.id === editingProd.id ? res.data : p);
         setLocalProducts(updated);
         setGlobalProducts(updated);
       } else {
-        // Create
         res = await api.post('/productos', payload);
         const updated = [...localProducts, res.data];
         setLocalProducts(updated);
@@ -183,23 +179,21 @@ const AdminDashboard: React.FC = () => {
       setShowProdModal(false);
       resetProdForm();
     } catch (err: any) {
-      // Granular error handling
       const status = err.response?.status;
       if (status === 401 || status === 403) {
-        throw err; // Interceptor handles logout
+        throw err;
       } else if (status === 400) {
-        setProdError(err.response?.data?.message || 'Datos inválidos (verifica categoría o precio)');
+        setProdError(err.response?.data?.message || 'Datos inválidos');
       } else if (status === 404) {
         setProdError('Categoría no encontrada');
       } else {
-        setProdError(err.response?.data?.message || 'Error inesperado al guardar producto');
+        setProdError(err.response?.data?.message || 'Error al guardar producto');
       }
-      console.error('Producto error details:', err.response?.data);
+      console.error('Producto error:', err.response?.data);
     } finally {
-      // Always clear loading after submit
       setLoading(prev => ({ ...prev, products: false }));
     }
-  }, [prodFormData, editingProd, localProducts, setGlobalProducts]);
+  }, [prodFormData, editingProd, localProducts, setGlobalProducts]);  // Deps estables
 
   const handleEditProd = useCallback((p: Product) => {
     setEditingProd(p);
@@ -212,12 +206,12 @@ const AdminDashboard: React.FC = () => {
       description: p.description || ''
     });
     setShowProdModal(true);
-  }, []);
+  }, []);  // Sin deps (estable)
 
   const handleDeleteProd = useCallback(async (id: string | number) => {
     if (window.confirm('¿Eliminar producto?')) {
       try {
-        setLoading(prev => ({ ...prev, products: true }));  // Loading for delete
+        setLoading(prev => ({ ...prev, products: true }));
         await api.delete(`/productos/${id}`);
         const updated = localProducts.filter(p => p.id !== id);
         setLocalProducts(updated);
@@ -238,13 +232,13 @@ const AdminDashboard: React.FC = () => {
     setProdError('');
   }, []);
 
-  // --- CATEGORY HANDLERS ---
+  // --- CATEGORY HANDLERS --- (igual, estabilizados)
   const handleCatSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setCatError('');
 
     try {
-      setLoading(prev => ({ ...prev, categories: true }));  // Loading for submit
+      setLoading(prev => ({ ...prev, categories: true }));
 
       if (editingCat) {
         const res = await api.put(`/categorias/${editingCat.id}`, catFormData);
@@ -282,7 +276,7 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteCat = useCallback(async (id: number) => {
     if (window.confirm('¿Eliminar categoría?')) {
       try {
-        setLoading(prev => ({ ...prev, categories: true }));  // Loading for delete
+        setLoading(prev => ({ ...prev, categories: true }));
         await api.delete(`/categorias/${id}`);
         const updated = localCategories.filter(c => c.id !== id);
         setLocalCategories(updated);
@@ -297,7 +291,7 @@ const AdminDashboard: React.FC = () => {
     }
   }, [localCategories, setGlobalCategories]);
 
-  // Memoized tables para performance
+  // Memoized tables (con deps estables)
   const productsTable = useMemo(() => (
     <Table striped bordered hover responsive>
       <thead>
@@ -407,7 +401,9 @@ const AdminDashboard: React.FC = () => {
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1><FaBox /> Dashboard Administrativo</h1>
-        <Button variant="outline-secondary" onClick={() => window.location.reload()}>Refrescar</Button>
+        <Button variant="outline-secondary" onClick={handleRefresh}>
+          <FaSyncAlt /> Refrescar
+        </Button>
       </div>
 
       <Tabs
@@ -491,7 +487,9 @@ const AdminDashboard: React.FC = () => {
                     onChange={e => setProdFormData({ ...prodFormData, description: e.target.value })}
                   />
                 </Form.Group>
-                <Button type="submit" variant="primary" className="me-2"><FaSave /> Guardar</Button>
+                <Button type="submit" variant="primary" className="me-2" disabled={loading.products}>
+                  <FaSave /> Guardar
+                </Button>
                 <Button variant="secondary" onClick={() => setShowProdModal(false)}>Cancelar</Button>
               </Form>
             </Modal.Body>
@@ -530,7 +528,9 @@ const AdminDashboard: React.FC = () => {
                     onChange={e => setCatFormData({ ...catFormData, descripcion: e.target.value })}
                   />
                 </Form.Group>
-                <Button type="submit" variant="primary" className="me-2"><FaSave /> Guardar</Button>
+                <Button type="submit" variant="primary" className="me-2" disabled={loading.categories}>
+                  <FaSave /> Guardar
+                </Button>
                 <Button variant="secondary" onClick={() => setShowCatModal(false)}>Cancelar</Button>
               </Form>
             </Modal.Body>
