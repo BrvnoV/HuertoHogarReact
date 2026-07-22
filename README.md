@@ -1,16 +1,36 @@
-# React + Vite
+# 🥬 Huerto Hogar — Frontend Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5+-646CFF?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Backend](https://img.shields.io/badge/Backend-Spring%20Boot-6DB33F?style=flat&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Currently, two official plugins are available:
+**Huerto Hogar Web** es la aplicación cliente para el e-commerce de productos agrícolas y de cultivo local. Construida como una Single Page Application (SPA) con **React**, **Vite** y **TypeScript**, la plataforma consume una API REST desarrollada en **Spring Boot** para la gestión de productos, autenticación de usuarios y procesamiento del carrito de compras.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🛠️ Arquitectura y Tecnologías
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend Stack
+- **Framework / Core:** React 18
+- **Build Tool:** Vite (desarrollo rápido con HMR y bundling optimizado)
+- **Lenguaje:** TypeScript / JavaScript (ES6+)
+- **Testing:** Karma / Jasmine
 
-## Expanding the ESLint configuration
+### Integración Backend
+- **Consumo de API:** Comunicación asíncrona (Fetch / Axios) conectando con el backend **Spring Boot REST API**.
+- **Manejo de Estado:** Gestión reactiva del estado local para el carrito de compras y la sesión de usuario.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🏗️ Estructura del Proyecto
+
+```text
+src/
+├── assets/          # Recursos estáticos (imágenes, íconos, estilos globales)
+├── components/      # Componentes UI reutilizables (Tarjetas, Botones, Navbar)
+├── services/        # Módulos de conexión e integración con la API REST
+├── pages/           # Vistas principales (Home, Catálogo, Carrito, Login)
+├── App.tsx          # Enrutamiento y componente raíz
+└── main.tsx         # Punto de entrada de React con Vite
