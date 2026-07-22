@@ -68,7 +68,7 @@
 ## 👥 Colaboradores
 
 * **Bruno Valenzuela** — *Frontend Developer* — [GitHub](https://github.com/tu-usuario) | [LinkedIn](https://linkedin.com/in/tu-perfil)
-* **Rodrigo** — *Co-Developer*
+* **Rodrigo Garrido** — *Co-Developer*
 
 ---
 
